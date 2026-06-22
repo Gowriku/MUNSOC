@@ -128,6 +128,8 @@ class FeeTier(Base):
     name: Mapped[str] = mapped_column(String, nullable=False)       # "Early Bird"
     tier_key: Mapped[str] = mapped_column(String, unique=True)      # "early_bird"
     amount: Mapped[float] = mapped_column(Float, nullable=False)
+    # New: explicit window (start + deadline). start_date is nullable for backward compat.
+    start_date: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     deadline: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

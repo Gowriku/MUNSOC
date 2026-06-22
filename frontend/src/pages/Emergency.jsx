@@ -83,7 +83,7 @@ export default function Emergency() {
           <Card>
             <CardTitle>Quick Contacts</CardTitle>
             {[
-              { label: 'Event Helpdesk', number: '+91 XXXXX XXXXX', icon: '📞' },
+              { label: 'Event Helpdesk', number: '+91 9207939719', icon: '📞' },
               { label: 'Medical Support', number: '+91 XXXXX XXXXX', icon: '🏥' },
               { label: 'Transport Coordinator', number: '+91 XXXXX XXXXX', icon: '🚌' },
               { label: 'Secretary General', number: '+91 XXXXX XXXXX', icon: '🎓' },

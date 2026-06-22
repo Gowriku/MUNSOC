@@ -1,17 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from datetime import datetime
 
 from app.core.database import get_db
 from app.core.auth import get_current_user, require_role
-from app.models.user import User, PaymentStatus
-from app.models.event import QRToken, FeeTier
+from app.models.user import User, PaymentStatus, UserRole
+from app.models.event import QRToken, FeeTier, Preference, Assignment
 from app.schemas.user import UserOut, UserUpdate, UserAdminOut, PaymentSubmit, RoleUpdate
 
 import uuid
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+DELEGATE_ROLES = {UserRole.delegate}
 
 
 @router.patch("/me", response_model=UserOut)
@@ -24,17 +26,15 @@ async def update_profile(
     for field, value in data.model_dump(exclude_none=True).items():
         setattr(current_user, field, value)
 
-    # Set reg_tier and amount_due if not already set
-    if not current_user.reg_tier:
+    # Only set reg_tier/amount for delegates
+    if current_user.role == UserRole.delegate and not current_user.reg_tier:
         now = datetime.utcnow()
-        result = await db.execute(
-            select(FeeTier)
-            .where(FeeTier.is_active == True)
-            .order_by(FeeTier.deadline)
-        )
+        result = await db.execute(select(FeeTier).where(FeeTier.is_active == True).order_by(FeeTier.deadline))
         tiers = result.scalars().all()
         for tier in tiers:
-            if now <= tier.deadline:
+            # respect start_date if set
+            tier_start = tier.start_date or datetime.min
+            if tier_start <= now <= tier.deadline:
                 current_user.reg_tier = tier.tier_key
                 current_user.amount_due = tier.amount
                 break
@@ -50,7 +50,9 @@ async def submit_payment(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Student submits UTR after paying via UPI."""
+    """Delegate submits UTR after paying via UPI."""
+    if current_user.role != UserRole.delegate:
+        raise HTTPException(status_code=403, detail="Only delegates can submit payments")
     if current_user.payment_status == PaymentStatus.confirmed:
         raise HTTPException(status_code=400, detail="Payment already confirmed")
     current_user.payment_utr = data.utr
@@ -65,7 +67,9 @@ async def get_my_qr(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get QR token (only if payment confirmed)."""
+    """Get QR token (only delegates with confirmed payment)."""
+    if current_user.role != UserRole.delegate:
+        raise HTTPException(status_code=403, detail="QR is only for delegates")
     if current_user.payment_status != PaymentStatus.confirmed:
         raise HTTPException(status_code=403, detail="QR available only after payment confirmation")
 
@@ -74,12 +78,8 @@ async def get_my_qr(
     if not qr:
         raise HTTPException(status_code=404, detail="QR token not generated yet")
 
-    return {
-        "token": qr.token,
-        "verify_url": f"/api/v1/checkin/verify/{qr.token}",
-        "user_name": current_user.name,
-        "issued_at": qr.issued_at,
-    }
+    return {"token": qr.token, "verify_url": f"/api/v1/checkin/verify/{qr.token}",
+            "user_name": current_user.name, "issued_at": qr.issued_at}
 
 
 # ── Admin-only routes ──────────────────────────────────────────────
@@ -109,7 +109,6 @@ async def confirm_payment(
     user.payment_status = status
     if status == PaymentStatus.confirmed:
         user.payment_confirmed_at = datetime.utcnow()
-        # Generate QR token
         existing_qr = await db.execute(select(QRToken).where(QRToken.user_id == user_id))
         if not existing_qr.scalar_one_or_none():
             qr = QRToken(user_id=user_id, token=str(uuid.uuid4()))
@@ -127,11 +126,30 @@ async def update_role(
     _=Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ):
+    """Change a user's role. When changed FROM delegate, delegate-specific data is cleared."""
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    user.role = data.role
+
+    old_role = user.role
+    new_role = data.role
+
+    # If changing away from delegate → clear delegate-specific fields
+    if old_role == UserRole.delegate and new_role != UserRole.delegate:
+        user.reg_tier = None
+        user.amount_due = 0.0
+        user.payment_status = PaymentStatus.pending
+        user.payment_utr = None
+        user.payment_confirmed_at = None
+        user.transportation_opted = False
+        # Remove preference and assignment records
+        await db.execute(delete(Preference).where(Preference.user_id == user_id))
+        await db.execute(delete(Assignment).where(Assignment.user_id == user_id))
+        await db.execute(delete(QRToken).where(QRToken.user_id == user_id))
+
+    # If changing TO delegate from non-delegate, nothing extra needed
+    user.role = new_role
     await db.commit()
     await db.refresh(user)
     return user

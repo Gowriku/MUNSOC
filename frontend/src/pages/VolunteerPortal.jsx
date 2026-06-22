@@ -5,7 +5,6 @@ import { useToast, ToastContainer } from '../components/Toast'
 import api from '../api/client'
 import useAuthStore from '../store/authStore'
 
-// Dynamically load html5-qrcode only when scanner is needed
 let Html5QrcodeScanner = null
 
 const ALERT_TYPES = [
@@ -16,18 +15,25 @@ const ALERT_TYPES = [
   { value: 'custom',        label: '📢 Custom Message',   desc: 'Send a custom announcement' },
 ]
 
+const TABS = [
+  { key: 'scanner',   label: '📷 QR Scanner' },
+  { key: 'alerts',    label: '📢 Send Alerts' },
+  { key: 'checkins',  label: '✅ Attendance' },
+  { key: 'emergency', label: '🆘 Emergency' },
+]
+
 export default function VolunteerPortal() {
   const { user } = useAuthStore()
   const { toasts, show } = useToast()
-  const [activeTab, setActiveTab]         = useState('scanner')
-  const [committees, setCommittees]       = useState([])
-  const [checkins, setCheckins]           = useState([])
-  const [messages, setMessages]           = useState([])
-  const [scanResult, setScanResult]       = useState(null)
-  const [scanning, setScanning]           = useState(false)
-  const [scanMode, setScanMode]           = useState('event')  // event | transport
-  const [manualToken, setManualToken]     = useState('')
-  const [verifying, setVerifying]         = useState(false)
+  const [activeTab, setActiveTab]           = useState('scanner')
+  const [committees, setCommittees]         = useState([])
+  const [checkins, setCheckins]             = useState([])
+  const [messages, setMessages]             = useState([])
+  const [scanResult, setScanResult]         = useState(null)
+  const [scanning, setScanning]             = useState(false)
+  const [scanMode, setScanMode]             = useState('event')
+  const [manualToken, setManualToken]       = useState('')
+  const [verifying, setVerifying]           = useState(false)
 
   // Alert form
   const [alertCommittee, setAlertCommittee] = useState('')
@@ -35,9 +41,10 @@ export default function VolunteerPortal() {
   const [alertMessage, setAlertMessage]     = useState('')
   const [sendingAlert, setSendingAlert]     = useState(false)
 
-  // Reply
-  const [replyText, setReplyText]   = useState({})
-  const scannerRef = useRef(null)
+  // Emergency reply
+  const [replyText, setReplyText]           = useState({})
+
+  const scannerRef         = useRef(null)
   const scannerInstanceRef = useRef(null)
 
   useEffect(() => {
@@ -52,26 +59,21 @@ export default function VolunteerPortal() {
   const fetchMessages = () =>
     api.get('/messages/').then(r => setMessages(r.data)).catch(() => {})
 
-  // ── QR Scanner ────────────────────────────────────────────────────
+  // ── QR Scanner ────────────────────────────────────────────────
 
   const startScanner = async () => {
     setScanResult(null)
     setScanning(true)
-    // Dynamically import html5-qrcode
     if (!Html5QrcodeScanner) {
       const mod = await import('html5-qrcode')
       Html5QrcodeScanner = mod.Html5QrcodeScanner
     }
     setTimeout(() => {
       if (scannerRef.current) {
-        const scanner = new Html5QrcodeScanner('qr-reader', { fps: 10, qrbox: 250 }, false)
+        const scanner = new Html5QrcodeScanner('qr-reader-vol', { fps: 10, qrbox: 250 }, false)
         scanner.render(
-          (decodedText) => {
-            scanner.clear()
-            setScanning(false)
-            handleVerify(decodedText)
-          },
-          (err) => {}
+          (decodedText) => { scanner.clear(); setScanning(false); handleVerify(decodedText) },
+          () => {}
         )
         scannerInstanceRef.current = scanner
       }
@@ -87,11 +89,9 @@ export default function VolunteerPortal() {
   }
 
   const handleVerify = async (rawValue) => {
-    // Extract token from URL or use raw value
     let token = rawValue
     const match = rawValue.match(/\/checkin\/verify\/([a-f0-9-]+)/)
     if (match) token = match[1]
-
     setVerifying(true)
     try {
       const res = await api.get(`/checkin/verify/${token}?checkin_type=${scanMode}`)
@@ -116,7 +116,7 @@ export default function VolunteerPortal() {
     setManualToken('')
   }
 
-  // ── Alerts ────────────────────────────────────────────────────────
+  // ── Alerts ────────────────────────────────────────────────────
 
   const handleSendAlert = async () => {
     if (alertType === 'custom' && !alertMessage.trim())
@@ -143,36 +143,33 @@ export default function VolunteerPortal() {
     }
   }
 
-  // ── Messages ──────────────────────────────────────────────────────
+  // ── Emergency replies ─────────────────────────────────────────
 
   const handleReply = async (msgId) => {
     const text = replyText[msgId]
-    if (!text?.trim()) return
     try {
-      await api.patch(`/messages/${msgId}/read`, null, { params: { reply: text.trim() } })
-      show('Reply sent', 'success')
+      await api.patch(`/messages/${msgId}/read`, null, { params: { reply: text?.trim() || undefined } })
+      show('Resolved', 'success')
       setReplyText(prev => ({ ...prev, [msgId]: '' }))
       fetchMessages()
-    } catch {
-      show('Failed to send reply', 'error')
-    }
+    } catch { show('Failed to resolve', 'error') }
   }
 
-  const checkedIn   = checkins.filter(c => c.checked_in).length
-  const notChecked  = checkins.filter(c => !c.checked_in).length
-  const unreadMsgs  = messages.filter(m => !m.is_read).length
+  const checkedIn  = checkins.filter(c => c.checked_in).length
+  const notChecked = checkins.filter(c => !c.checked_in).length
+  const unreadMsgs = messages.filter(m => !m.is_read).length
 
   return (
-    <PageLayout title="🎯 Volunteer Portal" subtitle="Scan QR codes, send alerts, and manage emergency messages.">
+    <PageLayout title="🎯 Volunteer Portal" subtitle={`Logged in as ${user?.name} · Volunteer`}>
       <ToastContainer toasts={toasts} />
 
-      {/* Summary strip */}
+      {/* Stats strip */}
       <div style={s.strip}>
         {[
-          { label: 'Checked In',     value: checkedIn,  color: '#4caf50' },
-          { label: 'Not Checked In', value: notChecked, color: '#f44336' },
-          { label: 'Unread Messages',value: unreadMsgs, color: '#ff9800' },
-          { label: 'Committees',     value: committees.length, color: '#2196f3' },
+          { label: 'Checked In',      value: checkedIn,          color: '#4caf50' },
+          { label: 'Not Checked In',  value: notChecked,         color: '#f44336' },
+          { label: 'Urgent Messages', value: unreadMsgs,         color: '#ff9800' },
+          { label: 'Committees',      value: committees.length,  color: '#2196f3' },
         ].map(({ label, value, color }) => (
           <div key={label} style={s.stripItem}>
             <span style={{ ...s.stripVal, color }}>{value}</span>
@@ -183,26 +180,22 @@ export default function VolunteerPortal() {
 
       {/* Tabs */}
       <div style={s.tabs}>
-        {[
-          { key: 'scanner',  label: '📷 QR Scanner' },
-          { key: 'alerts',   label: '📢 Send Alerts' },
-          { key: 'checkins', label: `✅ Attendance (${checkedIn}/${checkins.length})` },
-          { key: 'messages', label: `🆘 Messages${unreadMsgs > 0 ? ` (${unreadMsgs})` : ''}` },
-        ].map(t => (
-          <button key={t.key} onClick={() => { setActiveTab(t.key); stopScanner() }}
+        {TABS.map(t => (
+          <button key={t.key}
+            onClick={() => { setActiveTab(t.key); stopScanner() }}
             style={{ ...s.tab, ...(activeTab === t.key ? s.activeTab : {}) }}>
-            {t.label}
+            {t.key === 'checkins'  ? `${t.label} (${checkedIn}/${checkins.length})` :
+             t.key === 'emergency' ? `${t.label}${unreadMsgs > 0 ? ` (${unreadMsgs})` : ''}` :
+             t.label}
           </button>
         ))}
       </div>
 
-      {/* ── SCANNER TAB ────────────────────────────────────────── */}
+      {/* ── SCANNER TAB ──────────────────────────────────────── */}
       {activeTab === 'scanner' && (
         <div style={s.grid2}>
           <Card>
             <CardTitle>Scan Delegate QR</CardTitle>
-
-            {/* Scan mode toggle */}
             <div style={s.modeRow}>
               <span style={s.modeLabel}>Check-in type:</span>
               {['event', 'transport'].map(mode => (
@@ -213,49 +206,33 @@ export default function VolunteerPortal() {
               ))}
             </div>
 
-            {/* Scanner area */}
             {!scanning ? (
               <div style={s.scanPrompt}>
                 <div style={{ fontSize: 64, marginBottom: 12 }}>📷</div>
                 <p style={{ color: '#666', marginBottom: 20, textAlign: 'center' }}>
                   Click below to open camera and scan a delegate's QR code.
                 </p>
-                <Button onClick={startScanner} style={{ width: '100%' }}>
-                  Start Camera Scanner
-                </Button>
+                <Button onClick={startScanner} style={{ width: '100%' }}>Start Camera Scanner</Button>
               </div>
             ) : (
               <div>
-                <div id="qr-reader" ref={scannerRef} style={{ width: '100%' }} />
-                <Button onClick={stopScanner} variant="secondary" style={{ width: '100%', marginTop: 12 }}>
-                  Stop Scanner
-                </Button>
+                <div id="qr-reader-vol" ref={scannerRef} style={{ width: '100%' }} />
+                <Button onClick={stopScanner} variant="secondary" style={{ width: '100%', marginTop: 12 }}>Stop Scanner</Button>
               </div>
             )}
 
             <div style={s.divider}>or enter token manually</div>
-
             <div style={s.manualRow}>
-              <input
-                value={manualToken}
-                onChange={e => setManualToken(e.target.value)}
-                placeholder="Paste QR URL or token UUID"
-                style={s.input}
-                onKeyDown={e => e.key === 'Enter' && handleManualVerify()}
-              />
-              <Button onClick={handleManualVerify} disabled={verifying}>
-                {verifying ? '...' : 'Verify'}
-              </Button>
+              <input value={manualToken} onChange={e => setManualToken(e.target.value)}
+                placeholder="Paste QR URL or token UUID" style={s.input}
+                onKeyDown={e => e.key === 'Enter' && handleManualVerify()} />
+              <Button onClick={handleManualVerify} disabled={verifying}>{verifying ? '...' : 'Verify'}</Button>
             </div>
           </Card>
 
-          {/* Result Card */}
           <div>
             {scanResult ? (
-              <Card style={{
-                border: `2px solid ${scanResult.success ? '#4caf50' : '#f44336'}`,
-                background: scanResult.success ? '#f1f8f1' : '#fff5f5',
-              }}>
+              <Card style={{ border: `2px solid ${scanResult.success ? '#4caf50' : '#f44336'}`, background: scanResult.success ? '#f1f8f1' : '#fff5f5' }}>
                 <div style={{ textAlign: 'center', marginBottom: 16 }}>
                   <div style={{ fontSize: 56 }}>{scanResult.success ? '✅' : '❌'}</div>
                   <h2 style={{ margin: '8px 0 4px', color: scanResult.success ? '#2e7d32' : '#c62828' }}>
@@ -263,36 +240,22 @@ export default function VolunteerPortal() {
                   </h2>
                   <p style={{ color: '#666', margin: 0 }}>{scanResult.message}</p>
                 </div>
-
                 {scanResult.user_name && scanResult.user_name !== '—' && (
                   <div style={s.resultDetails}>
-                    <div style={s.resultRow}>
-                      <span style={s.resultLabel}>Name</span>
-                      <span style={s.resultVal}>{scanResult.user_name}</span>
-                    </div>
-                    <div style={s.resultRow}>
-                      <span style={s.resultLabel}>Email</span>
-                      <span style={s.resultVal}>{scanResult.user_email}</span>
-                    </div>
-                    {scanResult.assigned_country && (
-                      <div style={s.resultRow}>
-                        <span style={s.resultLabel}>Country</span>
-                        <span style={{ ...s.resultVal, fontWeight: 700 }}>{scanResult.assigned_country}</span>
+                    {[
+                      ['Name', scanResult.user_name],
+                      ['Email', scanResult.user_email],
+                      ['Country', scanResult.assigned_country],
+                      ['Committee', scanResult.committee],
+                      ['Type', scanResult.checkin_type],
+                    ].filter(([, v]) => v).map(([k, v]) => (
+                      <div key={k} style={s.resultRow}>
+                        <span style={s.resultLabel}>{k}</span>
+                        <span style={{ ...s.resultVal, fontWeight: k === 'Country' ? 700 : 400 }}>{v}</span>
                       </div>
-                    )}
-                    {scanResult.committee && (
-                      <div style={s.resultRow}>
-                        <span style={s.resultLabel}>Committee</span>
-                        <span style={s.resultVal}>{scanResult.committee}</span>
-                      </div>
-                    )}
-                    <div style={s.resultRow}>
-                      <span style={s.resultLabel}>Type</span>
-                      <span style={s.resultVal}>{scanResult.checkin_type}</span>
-                    </div>
+                    ))}
                   </div>
                 )}
-
                 <Button onClick={() => setScanResult(null)} variant="secondary" style={{ width: '100%', marginTop: 12 }}>
                   Scan Next Delegate
                 </Button>
@@ -303,27 +266,15 @@ export default function VolunteerPortal() {
                 <p style={{ color: '#aaa' }}>Scan result will appear here</p>
               </Card>
             )}
-
-            <Card style={{ marginTop: 16 }}>
-              <CardTitle>Instructions</CardTitle>
-              <ol style={{ paddingLeft: 18, color: '#555', fontSize: 14, lineHeight: 2, margin: 0 }}>
-                <li>Select check-in type (Event or Transport)</li>
-                <li>Click "Start Camera Scanner"</li>
-                <li>Point at delegate's QR code on their phone/paper</li>
-                <li>Result shows instantly — name and country confirmed</li>
-                <li>For bus check-in, switch to Transport mode</li>
-              </ol>
-            </Card>
           </div>
         </div>
       )}
 
-      {/* ── ALERTS TAB ─────────────────────────────────────────── */}
+      {/* ── ALERTS TAB ───────────────────────────────────────── */}
       {activeTab === 'alerts' && (
         <div style={s.grid2}>
           <Card>
             <CardTitle>Send Committee Alert</CardTitle>
-
             <label style={s.label}>Target Committee</label>
             <select value={alertCommittee} onChange={e => setAlertCommittee(e.target.value)} style={s.select}>
               <option value="">📢 All Committees (Broadcast)</option>
@@ -347,13 +298,8 @@ export default function VolunteerPortal() {
             {alertType === 'custom' && (
               <div style={{ marginTop: 16 }}>
                 <label style={s.label}>Custom Message</label>
-                <textarea
-                  value={alertMessage}
-                  onChange={e => setAlertMessage(e.target.value)}
-                  placeholder="Type your announcement here..."
-                  rows={3}
-                  style={s.textarea}
-                />
+                <textarea value={alertMessage} onChange={e => setAlertMessage(e.target.value)}
+                  placeholder="Type your announcement here..." rows={3} style={s.textarea} />
               </div>
             )}
 
@@ -375,10 +321,10 @@ export default function VolunteerPortal() {
           </Card>
 
           <Card>
-            <CardTitle>How Alerts Work</CardTitle>
+            <CardTitle>Alert Guide</CardTitle>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {ALERT_TYPES.map(a => (
-                <div key={a.value} style={s.alertInfoRow}>
+                <div key={a.value} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid #f5f5f5' }}>
                   <span style={{ fontSize: 22 }}>{a.label.split(' ')[0]}</span>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: 14 }}>{a.label.split(' ').slice(1).join(' ')}</div>
@@ -387,36 +333,24 @@ export default function VolunteerPortal() {
                 </div>
               ))}
             </div>
-            <div style={s.infoBox}>
-              <strong style={{ fontSize: 13 }}>Real-time delivery</strong>
-              <p style={{ fontSize: 13, color: '#555', margin: '4px 0 0' }}>
-                Alerts are pushed instantly via WebSocket to all connected delegates in the selected committee. They appear as a banner notification on the delegate portal.
-              </p>
-            </div>
           </Card>
         </div>
       )}
 
-      {/* ── ATTENDANCE TAB ─────────────────────────────────────── */}
+      {/* ── ATTENDANCE TAB ───────────────────────────────────── */}
       {activeTab === 'checkins' && (
         <Card>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <CardTitle>Attendance List</CardTitle>
             <Button onClick={fetchCheckins} variant="ghost" style={{ padding: '6px 14px', fontSize: 13 }}>↻ Refresh</Button>
           </div>
-
-          <div style={s.searchRow}>
-            <input placeholder="🔍 Search by name or email..." style={s.searchInput}
-              onChange={e => {
-                const q = e.target.value.toLowerCase()
-                // filter handled inline below via state would be better, but for simplicity:
-                document.querySelectorAll('[data-delegate-row]').forEach(row => {
-                  row.style.display = row.dataset.name?.includes(q) || row.dataset.email?.includes(q) ? '' : 'none'
-                })
-              }}
-            />
-          </div>
-
+          <input placeholder="🔍 Search by name or email..." style={s.searchInput}
+            onChange={e => {
+              const q = e.target.value.toLowerCase()
+              document.querySelectorAll('[data-delegate-row]').forEach(row => {
+                row.style.display = row.dataset.name?.includes(q) || row.dataset.email?.includes(q) ? '' : 'none'
+              })
+            }} />
           <div style={s.tableWrap}>
             <table style={s.table}>
               <thead>
@@ -430,17 +364,13 @@ export default function VolunteerPortal() {
               <tbody>
                 {checkins.map(c => (
                   <tr key={c.user_id} data-delegate-row
-                    data-name={c.name?.toLowerCase()}
-                    data-email={c.email?.toLowerCase()}
+                    data-name={c.name?.toLowerCase()} data-email={c.email?.toLowerCase()}
                     style={{ borderBottom: '1px solid #f0f0f0', background: c.checked_in ? '#f1f8f1' : 'white' }}>
                     <td style={s.td}><strong>{c.name}</strong></td>
                     <td style={{ ...s.td, color: '#888', fontSize: 13 }}>{c.email}</td>
                     <td style={s.td}>
-                      <span style={{
-                        padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700,
-                        background: c.checked_in ? '#e8f5e9' : '#ffebee',
-                        color: c.checked_in ? '#2e7d32' : '#c62828',
-                      }}>
+                      <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                        background: c.checked_in ? '#e8f5e9' : '#ffebee', color: c.checked_in ? '#2e7d32' : '#c62828' }}>
                         {c.checked_in ? '✅ Present' : '⏳ Absent'}
                       </span>
                     </td>
@@ -451,19 +381,17 @@ export default function VolunteerPortal() {
                 ))}
               </tbody>
             </table>
-            {checkins.length === 0 && (
-              <p style={{ textAlign: 'center', color: '#aaa', padding: 32 }}>No delegates registered yet</p>
-            )}
+            {checkins.length === 0 && <p style={{ textAlign: 'center', color: '#aaa', padding: 32 }}>No delegates registered yet</p>}
           </div>
         </Card>
       )}
 
-      {/* ── MESSAGES TAB ───────────────────────────────────────── */}
-      {activeTab === 'messages' && (
+      {/* ── EMERGENCY MESSAGES TAB ───────────────────────────── */}
+      {activeTab === 'emergency' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 style={{ margin: 0 }}>Emergency Messages from Delegates</h3>
-            <Button onClick={fetchMessages} variant="ghost" style={{ padding: '6px 14px', fontSize: 13 }}>↻ Refresh</Button>
+            <h3 style={{ margin: 0 }}>🆘 Emergency Messages from Delegates</h3>
+            <Button onClick={fetchMessages} variant="ghost" style={{ fontSize: 13 }}>↻ Refresh</Button>
           </div>
 
           {messages.length === 0 ? (
@@ -485,11 +413,9 @@ export default function VolunteerPortal() {
                       {msg.sender_phone && <span style={s.msgPhone}>📞 {msg.sender_phone}</span>}
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 12, color: '#aaa' }}>
-                        {new Date(msg.created_at).toLocaleString()}
-                      </div>
+                      <div style={{ fontSize: 12, color: '#aaa' }}>{new Date(msg.created_at).toLocaleString()}</div>
                       {!msg.is_read && <span style={s.urgentBadge}>URGENT</span>}
-                      {msg.is_read && <span style={s.resolvedBadge}>Resolved</span>}
+                      {msg.is_read  && <span style={s.resolvedBadge}>Resolved</span>}
                     </div>
                   </div>
 
@@ -497,7 +423,7 @@ export default function VolunteerPortal() {
 
                   {msg.reply_text && (
                     <div style={s.replyDisplay}>
-                      <strong style={{ fontSize: 12, color: '#888' }}>VOLUNTEER REPLY:</strong>
+                      <strong style={{ fontSize: 12, color: '#888' }}>REPLY:</strong>
                       <p style={{ margin: '4px 0 0', fontSize: 14 }}>{msg.reply_text}</p>
                     </div>
                   )}
@@ -510,9 +436,7 @@ export default function VolunteerPortal() {
                         placeholder="Type reply (optional) and mark as resolved..."
                         style={{ ...s.input, flex: 1 }}
                       />
-                      <Button onClick={() => handleReply(msg.id)} variant="success">
-                        ✓ Resolve
-                      </Button>
+                      <Button onClick={() => handleReply(msg.id)} variant="success">✓ Resolve</Button>
                     </div>
                   )}
                 </Card>
@@ -532,12 +456,12 @@ const s = {
   stripLabel: { fontSize: 12, color: '#888', marginTop: 2, textAlign: 'center' },
   tabs: { display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' },
   tab: { padding: '10px 18px', border: '1px solid #e0e0e0', borderRadius: 8, background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', color: '#555' },
-  activeTab: { background: '#1a1a2e', color: 'white', border: '1px solid #1a1a2e' },
+  activeTab: { background: '#6a1b9a', color: 'white', border: '1px solid #6a1b9a' },
   grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, alignItems: 'start' },
   modeRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
   modeLabel: { fontSize: 13, fontWeight: 600, color: '#555' },
   modeBtn: { padding: '7px 14px', border: '1.5px solid #e0e0e0', borderRadius: 20, background: 'white', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', fontWeight: 600, color: '#555' },
-  modeBtnActive: { background: '#1a1a2e', color: 'white', border: '1.5px solid #1a1a2e' },
+  modeBtnActive: { background: '#6a1b9a', color: 'white', border: '1.5px solid #6a1b9a' },
   scanPrompt: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0' },
   divider: { textAlign: 'center', color: '#bbb', fontSize: 12, margin: '20px 0', borderTop: '1px solid #f0f0f0', paddingTop: 12 },
   manualRow: { display: 'flex', gap: 8 },
@@ -549,14 +473,11 @@ const s = {
   label: { display: 'block', fontSize: 13, fontWeight: 600, marginBottom: 6, color: '#333' },
   select: { width: '100%', padding: '9px 12px', border: '1.5px solid #ddd', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', background: 'white', outline: 'none' },
   alertTypeGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 },
-  alertTypeBtn: { display: 'flex', flexDirection: 'column', gap: 2, padding: '12px', border: '1.5px solid #e0e0e0', borderRadius: 10, background: 'white', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', transition: 'all 0.15s' },
-  alertTypeBtnActive: { background: '#1a1a2e', color: 'white', border: '1.5px solid #1a1a2e' },
+  alertTypeBtn: { display: 'flex', flexDirection: 'column', gap: 2, padding: '12px', border: '1.5px solid #e0e0e0', borderRadius: 10, background: 'white', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' },
+  alertTypeBtnActive: { background: '#6a1b9a', color: 'white', border: '1.5px solid #6a1b9a' },
   textarea: { width: '100%', padding: '10px 12px', border: '1.5px solid #ddd', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', resize: 'vertical', outline: 'none', boxSizing: 'border-box' },
   previewBox: { background: '#f8f9fa', borderRadius: 8, padding: '10px 14px', marginTop: 16 },
-  alertInfoRow: { display: 'flex', gap: 12, alignItems: 'flex-start', padding: '8px 0', borderBottom: '1px solid #f5f5f5' },
-  infoBox: { background: '#e8f0fe', borderRadius: 8, padding: 12, marginTop: 16 },
-  searchRow: { marginBottom: 12 },
-  searchInput: { width: '100%', padding: '9px 14px', border: '1.5px solid #e0e0e0', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' },
+  searchInput: { width: '100%', padding: '9px 14px', border: '1.5px solid #e0e0e0', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', marginBottom: 12 },
   tableWrap: { overflowX: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: 14 },
   thead: { background: '#f5f7fa' },
@@ -564,10 +485,10 @@ const s = {
   td: { padding: '12px 14px', color: '#333' },
   msgHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, flexWrap: 'wrap', gap: 8 },
   msgEmail: { fontSize: 13, color: '#888', marginLeft: 8 },
-  msgPhone: { fontSize: 13, color: '#1565c0', marginLeft: 8, fontWeight: 600 },
+  msgPhone: { fontSize: 13, color: '#6a1b9a', marginLeft: 8, fontWeight: 600 },
   urgentBadge: { display: 'inline-block', background: '#ffebee', color: '#c62828', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 700, marginTop: 4 },
   resolvedBadge: { display: 'inline-block', background: '#e8f5e9', color: '#2e7d32', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 700, marginTop: 4 },
   msgBody: { background: '#f8f9fa', borderRadius: 8, padding: '10px 14px', fontSize: 15, color: '#222', margin: '0 0 12px' },
-  replyDisplay: { background: '#e8f0fe', borderRadius: 8, padding: '10px 14px', marginBottom: 12 },
+  replyDisplay: { background: '#f3e5f5', borderRadius: 8, padding: '10px 14px', marginBottom: 12 },
   replyRow: { display: 'flex', gap: 8, alignItems: 'center' },
 }

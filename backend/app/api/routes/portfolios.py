@@ -82,7 +82,6 @@ async def submit_preferences(
     db: AsyncSession = Depends(get_db),
 ):
     """Delegate submits or updates their 3 portfolio preferences."""
-    # Check if already assigned
     existing_assign = await db.execute(
         select(Assignment).where(Assignment.user_id == current_user.id)
     )
@@ -103,8 +102,18 @@ async def submit_preferences(
         db.add(pref)
 
     await db.commit()
-    await db.refresh(pref)
-    return pref
+
+    # Re-fetch with relationships eagerly loaded
+    result = await db.execute(
+        select(Preference)
+        .where(Preference.user_id == current_user.id)
+        .options(
+            selectinload(Preference.pref1).selectinload(Portfolio.committee),
+            selectinload(Preference.pref2).selectinload(Portfolio.committee),
+            selectinload(Preference.pref3).selectinload(Portfolio.committee),
+        )
+    )
+    return result.scalar_one()
 
 
 @router.get("/preferences/me", response_model=PreferenceOut)
