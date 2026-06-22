@@ -1,0 +1,44 @@
+services:
+  # ── Backend ────────────────────────────────────────────────────
+  - type: web
+    name: munportal-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # set manually in Render dashboard
+      - key: SECRET_KEY
+        generateValue: true  # Render auto-generates a secure random value
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 10080
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: UPI_ID
+        sync: false
+      - key: UPI_NAME
+        sync: false
+
+  # ── Frontend ───────────────────────────────────────────────────
+  - type: web
+    name: munportal-frontend
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        sync: false          # set to https://munportal-backend.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
