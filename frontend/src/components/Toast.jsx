@@ -1,38 +1,41 @@
 import { useState, useCallback } from 'react'
+import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react'
 
 export function useToast() {
   const [toasts, setToasts] = useState([])
-
   const show = useCallback((message, type = 'info') => {
     const id = Date.now()
     setToasts(prev => [...prev, { id, message, type }])
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000)
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4500)
   }, [])
-
   return { toasts, show }
 }
 
 export function ToastContainer({ toasts }) {
-  const colors = {
-    success: { bg: '#e8f5e9', border: '#4caf50', color: '#1b5e20', icon: '✅' },
-    error:   { bg: '#ffebee', border: '#f44336', color: '#b71c1c', icon: '❌' },
-    info:    { bg: '#e3f2fd', border: '#2196f3', color: '#0d47a1', icon: 'ℹ️' },
-    warning: { bg: '#fff8e1', border: '#ff9800', color: '#e65100', icon: '⚠️' },
+  const config = {
+    success: { border: 'rgba(74,222,128,0.3)',   color: '#4ADE80', Icon: CheckCircle },
+    error:   { border: 'rgba(248,113,113,0.3)',  color: '#F87171', Icon: XCircle },
+    warning: { border: 'rgba(201,162,39,0.3)',   color: '#D4AF37', Icon: AlertTriangle },
+    info:    { border: 'rgba(147,197,253,0.3)',  color: '#93C5FD', Icon: Info },
   }
-
   return (
-    <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ position: 'fixed', bottom: 28, right: 28, zIndex: 9999, display: 'flex', flexDirection: 'column', gap: 8 }}>
       {toasts.map(t => {
-        const c = colors[t.type] || colors.info
+        const c = config[t.type] || config.info
         return (
           <div key={t.id} style={{
-            background: c.bg, border: `1px solid ${c.border}`, color: c.color,
-            padding: '12px 16px', borderRadius: 8, boxShadow: '0 4px 12px rgba(0,0,0,0.12)',
-            display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, fontWeight: 500,
-            minWidth: 280, maxWidth: 380, animation: 'slideIn 0.2s ease',
+            background: 'var(--surface-el)',
+            border: `1px solid ${c.border}`,
+            borderLeft: `3px solid ${c.color}`,
+            padding: '13px 18px', borderRadius: 'var(--radius-sm)',
+            boxShadow: 'var(--shadow)',
+            display: 'flex', alignItems: 'center', gap: 10,
+            fontSize: 13, fontWeight: 500, color: 'var(--text)',
+            minWidth: 280, maxWidth: 380,
+            animation: 'slideIn 0.22s ease',
           }}>
-            <span>{c.icon}</span>
-            {t.message}
+            <c.Icon size={15} color={c.color} style={{ flexShrink: 0 }} />
+            <span style={{ flex: 1 }}>{t.message}</span>
           </div>
         )
       })}

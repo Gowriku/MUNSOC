@@ -1,24 +1,25 @@
 import { useEffect, useState } from 'react'
+import { Search, CheckCircle, AlertTriangle, Users, Layers, ListChecks } from 'lucide-react'
 import PageLayout from '../components/PageLayout'
-import Card, { CardTitle, Button } from '../components/Card'
+import Card, { CardTitle, Button, MetricCard } from '../components/Card'
 import { useToast, ToastContainer } from '../components/Toast'
 import api from '../api/client'
+import useAuthStore from '../store/authStore'
 
 export default function DATeamPortal() {
+  const { user } = useAuthStore()
   const { toasts, show } = useToast()
-  const [delegates, setDelegates]         = useState([])
-  const [portfolios, setPortfolios]       = useState([])
-  const [committees, setCommittees]       = useState([])
-  const [loading, setLoading]             = useState(true)
-  const [search, setSearch]               = useState('')
-  const [filterStatus, setFilterStatus]  = useState('all')   // all | assigned | unassigned
-  const [assigning, setAssigning]         = useState({})      // { user_id: true }
-  const [selected, setSelected]           = useState({})      // { user_id: portfolio_id }
-  const [activeCommitteeFilter, setActiveCommitteeFilter] = useState('all')
+  const [delegates, setDelegates]   = useState([])
+  const [portfolios, setPortfolios] = useState([])
+  const [committees, setCommittees] = useState([])
+  const [loading, setLoading]       = useState(true)
+  const [search, setSearch]         = useState('')
+  const [filterStatus, setFilterStatus]   = useState('all')
+  const [activeCommitteeFilter, setActiveCF] = useState('all')
+  const [assigning, setAssigning]   = useState({})
+  const [selected, setSelected]     = useState({})
 
-  useEffect(() => {
-    fetchAll()
-  }, [])
+  useEffect(() => { fetchAll() }, [])
 
   const fetchAll = async () => {
     setLoading(true)
@@ -28,14 +29,9 @@ export default function DATeamPortal() {
         api.get('/portfolios/available'),
         api.get('/portfolios/committees'),
       ])
-      setDelegates(deleg.data)
-      setPortfolios(avail.data)
-      setCommittees(comm.data)
-    } catch {
-      show('Failed to load data', 'error')
-    } finally {
-      setLoading(false)
-    }
+      setDelegates(deleg.data); setPortfolios(avail.data); setCommittees(comm.data)
+    } catch { show('Failed to load data', 'error') }
+    finally { setLoading(false) }
   }
 
   const handleAssign = async (userId) => {
@@ -44,90 +40,61 @@ export default function DATeamPortal() {
     setAssigning(prev => ({ ...prev, [userId]: true }))
     try {
       await api.post('/portfolios/assign', { user_id: userId, portfolio_id: portfolioId })
-      show('Portfolio assigned!', 'success')
+      show('Portfolio assigned', 'success')
       await fetchAll()
       setSelected(prev => { const n = { ...prev }; delete n[userId]; return n })
-    } catch (e) {
-      show(e.response?.data?.detail || 'Assignment failed', 'error')
-    } finally {
-      setAssigning(prev => ({ ...prev, [userId]: false }))
-    }
+    } catch (e) { show(e.response?.data?.detail || 'Assignment failed', 'error') }
+    finally { setAssigning(prev => ({ ...prev, [userId]: false })) }
   }
 
-  const getPortfolioName = (portfolioId) => {
+  const getPortfolioName = (pid) => {
     for (const c of committees) {
-      const p = c.portfolios?.find(p => p.id === portfolioId)
-      if (p) return `${p.country_name} (${c.abbreviation})`
+      const p = c.portfolios?.find(p => p.id === pid)
+      if (p) return `${p.country_name} — ${c.abbreviation}`
     }
     return null
   }
-
-  const getCommitteeForPortfolio = (portfolioId) => {
-    for (const c of committees) {
-      if (c.portfolios?.find(p => p.id === portfolioId)) return c.id
-    }
+  const getCommitteeForPortfolio = (pid) => {
+    for (const c of committees) if (c.portfolios?.find(p => p.id === pid)) return c.id
     return null
   }
+  const portfoliosForCommittee = (cid) => portfolios.filter(p => p.committee_id === cid)
 
-  const filteredPortfoliosForCommittee = (committeeId) =>
-    portfolios.filter(p => p.committee_id === committeeId)
+  const total      = delegates.length
+  const assigned   = delegates.filter(d => d.assigned_portfolio_id).length
+  const unassigned = total - assigned
+  const withPrefs  = delegates.filter(d => d.pref1_id).length
 
-  // Stats
-  const totalDelegates  = delegates.length
-  const assigned        = delegates.filter(d => d.assigned_portfolio_id).length
-  const unassigned      = totalDelegates - assigned
-  const withPrefs       = delegates.filter(d => d.pref1_id).length
-
-  // Filtering
   const filtered = delegates.filter(d => {
-    const matchSearch = !search ||
-      d.name?.toLowerCase().includes(search.toLowerCase()) ||
-      d.email?.toLowerCase().includes(search.toLowerCase()) ||
-      d.college?.toLowerCase().includes(search.toLowerCase())
-
-    const matchStatus =
-      filterStatus === 'all'        ? true :
-      filterStatus === 'assigned'   ? !!d.assigned_portfolio_id :
-      filterStatus === 'unassigned' ? !d.assigned_portfolio_id : true
-
-    const matchCommittee =
-      activeCommitteeFilter === 'all' ? true :
-      d.assigned_portfolio_id
-        ? getCommitteeForPortfolio(d.assigned_portfolio_id) === activeCommitteeFilter
-        : false
-
-    return matchSearch && matchStatus && matchCommittee
+    const q = search.toLowerCase()
+    const matchSearch = !q || d.name?.toLowerCase().includes(q) || d.email?.toLowerCase().includes(q) || d.college?.toLowerCase().includes(q)
+    const matchStatus = filterStatus === 'all' ? true : filterStatus === 'assigned' ? !!d.assigned_portfolio_id : !d.assigned_portfolio_id
+    const matchComm = activeCommitteeFilter === 'all' ? true : d.assigned_portfolio_id ? getCommitteeForPortfolio(d.assigned_portfolio_id) === activeCommitteeFilter : false
+    return matchSearch && matchStatus && matchComm
   })
 
   return (
-    <PageLayout title="📂 Delegate Affairs Portal" subtitle="Assign country portfolios to delegates based on their preferences.">
+    <PageLayout title="Delegate Affairs" subtitle={`Logged in as ${user?.name} · DA Team`} maxWidth={1100}>
       <ToastContainer toasts={toasts} />
 
-      {/* Stats strip */}
-      <div style={s.strip}>
-        {[
-          { label: 'Total Delegates', value: totalDelegates,  color: '#1a1a2e' },
-          { label: 'Assigned',        value: assigned,         color: '#4caf50' },
-          { label: 'Unassigned',      value: unassigned,       color: '#f44336' },
-          { label: 'With Preferences',value: withPrefs,        color: '#2196f3' },
-          { label: 'Portfolios Left', value: portfolios.length, color: '#9c27b0' },
-        ].map(({ label, value, color }) => (
-          <div key={label} style={s.stripItem}>
-            <span style={{ ...s.stripVal, color }}>{value}</span>
-            <span style={s.stripLabel}>{label}</span>
-          </div>
-        ))}
+      {/* Metrics */}
+      <div style={s.metrics}>
+        <MetricCard label="Total Delegates"    value={total}       icon={Users}     color="var(--text)" />
+        <MetricCard label="Assigned"           value={assigned}    icon={CheckCircle} color="#4ADE80" />
+        <MetricCard label="Unassigned"         value={unassigned}  icon={AlertTriangle} color="#F87171" />
+        <MetricCard label="With Preferences"   value={withPrefs}   icon={ListChecks} color="var(--gold)" />
+        <MetricCard label="Portfolios Remaining" value={portfolios.length} icon={Layers} color="#93C5FD" />
       </div>
 
       {/* Filters */}
-      <Card style={{ marginBottom: 20 }}>
+      <Card style={{ marginBottom: 18 }}>
         <div style={s.filtersRow}>
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="🔍 Search by name, email or college..."
-            style={s.searchInput}
-          />
+          <div style={s.searchWrap}>
+            <Search size={14} color="var(--text-3)" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name, email or institution..."
+              style={s.searchInput} />
+          </div>
           <div style={s.filterBtns}>
             {['all', 'assigned', 'unassigned'].map(f => (
               <button key={f} onClick={() => setFilterStatus(f)}
@@ -137,62 +104,58 @@ export default function DATeamPortal() {
             ))}
           </div>
           <div style={s.filterBtns}>
-            <button onClick={() => setActiveCommitteeFilter('all')}
-              style={{ ...s.filterBtn, ...(activeCommitteeFilter === 'all' ? s.filterBtnActive : {}) }}>
+            <button onClick={() => setActiveCF('all')} style={{ ...s.filterBtn, ...(activeCommitteeFilter === 'all' ? s.filterBtnActive : {}) }}>
               All Committees
             </button>
             {committees.map(c => (
-              <button key={c.id} onClick={() => setActiveCommitteeFilter(c.id)}
+              <button key={c.id} onClick={() => setActiveCF(c.id)}
                 style={{ ...s.filterBtn, ...(activeCommitteeFilter === c.id ? s.filterBtnActive : {}) }}>
                 {c.abbreviation}
               </button>
             ))}
           </div>
         </div>
-        <p style={{ margin: '8px 0 0', fontSize: 13, color: '#888' }}>
-          Showing {filtered.length} of {totalDelegates} delegates
+        <p style={{ margin: '10px 0 0', fontSize: 12, color: 'var(--text-3)' }}>
+          Showing {filtered.length} of {total} delegates
         </p>
       </Card>
 
-      {/* Delegate Table */}
+      {/* Delegate list */}
       {loading ? (
-        <Card style={{ textAlign: 'center', padding: 48 }}>
-          <p style={{ color: '#888' }}>Loading delegates...</p>
-        </Card>
+        <Card style={{ textAlign: 'center', padding: 52 }}><p style={{ color: 'var(--text-3)' }}>Loading delegates...</p></Card>
       ) : filtered.length === 0 ? (
-        <Card style={{ textAlign: 'center', padding: 48 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
-          <p style={{ color: '#aaa' }}>No delegates match your filters</p>
+        <Card style={{ textAlign: 'center', padding: 52 }}>
+          <Search size={28} color="var(--text-3)" style={{ marginBottom: 12 }} />
+          <p style={{ color: 'var(--text-3)', fontSize: 13 }}>No delegates match your filters.</p>
         </Card>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {filtered.map(d => (
             <Card key={d.user_id} style={{
-              border: d.assigned_portfolio_id ? '1px solid #c8e6c9' : '1px solid #ffcdd2',
-              background: d.assigned_portfolio_id ? '#fafffe' : 'white',
+              border: d.assigned_portfolio_id ? '1px solid rgba(74,222,128,0.15)' : '1px solid var(--border)',
             }}>
               <div style={s.delegateRow}>
-                {/* Delegate info */}
+                {/* Info */}
                 <div style={s.delegateInfo}>
                   <div style={s.delegateName}>{d.name}</div>
                   <div style={s.delegateEmail}>{d.email}</div>
-                  {d.college && <div style={s.delegateCollege}>🏫 {d.college}</div>}
+                  {d.college && <div style={s.delegateCollege}>{d.college}</div>}
                 </div>
 
                 {/* Preferences */}
                 <div style={s.prefsBlock}>
                   <div style={s.prefBlockTitle}>Preferences</div>
                   {d.pref1_id || d.pref2_id || d.pref3_id ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                      {[d.pref1_id, d.pref2_id, d.pref3_id].map((pid, i) => pid && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {[d.pref1_id, d.pref2_id, d.pref3_id].filter(Boolean).map((pid, i) => (
                         <div key={i} style={s.prefItem}>
                           <span style={s.prefRank}>{i + 1}</span>
-                          <span style={{ fontSize: 13 }}>{getPortfolioName(pid) || pid?.slice(0, 8)}</span>
+                          <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{getPortfolioName(pid) || pid?.slice(0, 8)}</span>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <span style={{ fontSize: 13, color: '#bbb', fontStyle: 'italic' }}>No preferences</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-3)', fontStyle: 'italic' }}>No preferences submitted</span>
                   )}
                 </div>
 
@@ -200,40 +163,27 @@ export default function DATeamPortal() {
                 <div style={s.assignBlock}>
                   {d.assigned_portfolio_id ? (
                     <div style={s.assignedBox}>
-                      <span style={{ fontSize: 11, color: '#2e7d32', fontWeight: 700, letterSpacing: 0.5 }}>ASSIGNED</span>
+                      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#4ADE80' }}>Assigned</span>
                       <span style={s.assignedCountry}>{getPortfolioName(d.assigned_portfolio_id)}</span>
-                      <button
-                        onClick={() => {
-                          setSelected(prev => ({ ...prev, [d.user_id]: '' }))
-                          show('Select a new portfolio to reassign', 'info')
-                        }}
-                        style={s.reassignBtn}
-                      >
+                      <button onClick={() => { setSelected(prev => ({ ...prev, [d.user_id]: '' })); show('Select a new portfolio to reassign', 'info') }} style={s.reassignBtn}>
                         Reassign
                       </button>
                     </div>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <select
-                        value={selected[d.user_id] || ''}
-                        onChange={e => setSelected(prev => ({ ...prev, [d.user_id]: e.target.value }))}
-                        style={s.assignSelect}
-                      >
-                        <option value="">— Select portfolio —</option>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <select value={selected[d.user_id] || ''} onChange={e => setSelected(prev => ({ ...prev, [d.user_id]: e.target.value }))} style={s.select}>
+                        <option value="">Select portfolio</option>
                         {committees.map(c => (
                           <optgroup key={c.id} label={`${c.abbreviation} — ${c.name}`}>
-                            {filteredPortfoliosForCommittee(c.id).map(p => (
+                            {portfoliosForCommittee(c.id).map(p => (
                               <option key={p.id} value={p.id}>{p.country_name}</option>
                             ))}
                           </optgroup>
                         ))}
                       </select>
-                      <Button
-                        onClick={() => handleAssign(d.user_id)}
-                        disabled={!selected[d.user_id] || assigning[d.user_id]}
-                        style={{ padding: '7px 14px', fontSize: 13 }}
-                      >
-                        {assigning[d.user_id] ? 'Assigning...' : 'Assign →'}
+                      <Button onClick={() => handleAssign(d.user_id)} disabled={!selected[d.user_id] || assigning[d.user_id]}
+                        style={{ fontSize: 12, padding: '8px 14px' }}>
+                        {assigning[d.user_id] ? 'Assigning...' : 'Assign'}
                       </Button>
                     </div>
                   )}
@@ -244,28 +194,23 @@ export default function DATeamPortal() {
         </div>
       )}
 
-      {/* Unassigned summary at bottom */}
-      {unassigned > 0 && (
-        <Card style={{ marginTop: 20, background: '#fff8e1', border: '1px solid #ffe082' }}>
+      {/* Summary footer */}
+      {!loading && unassigned > 0 && (
+        <Card style={{ marginTop: 18, border: '1px solid rgba(248,113,113,0.2)', background: 'rgba(139,32,32,0.08)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <strong style={{ color: '#e65100' }}>⚠️ {unassigned} delegate{unassigned !== 1 ? 's' : ''} still unassigned</strong>
-              <p style={{ margin: '4px 0 0', fontSize: 13, color: '#888' }}>
-                {portfolios.length} portfolios are still available.
-              </p>
+              <div style={{ fontWeight: 700, color: '#F87171', fontSize: 14, marginBottom: 4 }}>
+                {unassigned} delegate{unassigned !== 1 ? 's' : ''} still unassigned
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{portfolios.length} portfolios available.</div>
             </div>
-            <Button onClick={() => setFilterStatus('unassigned')} variant="secondary" style={{ fontSize: 13 }}>
-              Show Unassigned
-            </Button>
+            <Button onClick={() => setFilterStatus('unassigned')} variant="ghost" style={{ fontSize: 12 }}>Show Unassigned</Button>
           </div>
         </Card>
       )}
-
-      {unassigned === 0 && totalDelegates > 0 && (
-        <Card style={{ marginTop: 20, background: '#e8f5e9', border: '1px solid #a5d6a7' }}>
-          <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <strong style={{ color: '#2e7d32', fontSize: 16 }}>✅ All delegates have been assigned portfolios!</strong>
-          </div>
+      {!loading && unassigned === 0 && total > 0 && (
+        <Card style={{ marginTop: 18, border: '1px solid rgba(74,222,128,0.2)', background: 'rgba(45,106,79,0.08)', textAlign: 'center', padding: '18px' }}>
+          <div style={{ fontWeight: 700, color: '#4ADE80', fontSize: 14 }}>All delegates have been assigned portfolios.</div>
         </Card>
       )}
     </PageLayout>
@@ -273,27 +218,25 @@ export default function DATeamPortal() {
 }
 
 const s = {
-  strip: { display: 'flex', background: 'white', border: '1px solid #e8e8e8', borderRadius: 12, marginBottom: 24, overflow: 'hidden', flexWrap: 'wrap' },
-  stripItem: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 12px', borderRight: '1px solid #f0f0f0', minWidth: 100 },
-  stripVal: { fontSize: 28, fontWeight: 800 },
-  stripLabel: { fontSize: 11, color: '#888', marginTop: 2, textAlign: 'center' },
+  metrics: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 20 },
   filtersRow: { display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' },
-  searchInput: { flex: '1 1 240px', padding: '9px 14px', border: '1.5px solid #e0e0e0', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none' },
-  filterBtns: { display: 'flex', gap: 4, flexWrap: 'wrap' },
-  filterBtn: { padding: '7px 12px', border: '1px solid #e0e0e0', borderRadius: 20, background: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'inherit', color: '#555' },
-  filterBtnActive: { background: '#1a1a2e', color: 'white', border: '1px solid #1a1a2e' },
-  delegateRow: { display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' },
+  searchWrap: { position: 'relative', flex: '1 1 240px' },
+  searchInput: { width: '100%', padding: '9px 12px 9px 34px', background: 'var(--surface-el)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: 13, color: 'var(--text)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' },
+  filterBtns: { display: 'flex', gap: 5, flexWrap: 'wrap' },
+  filterBtn: { padding: '7px 12px', border: '1px solid var(--border)', borderRadius: 20, background: 'transparent', cursor: 'pointer', fontSize: 11, fontWeight: 700, fontFamily: 'inherit', color: 'var(--text-3)', letterSpacing: '0.03em' },
+  filterBtnActive: { background: 'var(--wine)', color: 'var(--text)', border: '1px solid var(--wine)' },
+  delegateRow: { display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' },
   delegateInfo: { flex: '1 1 160px', minWidth: 0 },
-  delegateName: { fontWeight: 700, fontSize: 16, color: '#1a1a2e' },
-  delegateEmail: { fontSize: 13, color: '#888', marginTop: 2 },
-  delegateCollege: { fontSize: 12, color: '#aaa', marginTop: 4 },
+  delegateName: { fontWeight: 700, fontSize: 15, color: 'var(--text)', letterSpacing: '-0.2px', marginBottom: 3 },
+  delegateEmail: { fontSize: 12, color: 'var(--text-3)' },
+  delegateCollege: { fontSize: 11, color: 'var(--text-3)', marginTop: 3 },
   prefsBlock: { flex: '1 1 200px' },
-  prefBlockTitle: { fontSize: 11, fontWeight: 700, color: '#aaa', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 6 },
-  prefItem: { display: 'flex', alignItems: 'center', gap: 6 },
-  prefRank: { width: 18, height: 18, borderRadius: '50%', background: '#1a1a2e', color: 'white', fontSize: 10, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  assignBlock: { flex: '0 0 220px' },
-  assignedBox: { display: 'flex', flexDirection: 'column', gap: 4, background: '#f1f8f1', borderRadius: 8, padding: '10px 12px' },
-  assignedCountry: { fontWeight: 700, fontSize: 14, color: '#2e7d32' },
-  reassignBtn: { background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0, textAlign: 'left', fontFamily: 'inherit' },
-  assignSelect: { width: '100%', padding: '8px 10px', border: '1.5px solid #ddd', borderRadius: 8, fontSize: 13, fontFamily: 'inherit', background: 'white', outline: 'none' },
+  prefBlockTitle: { fontSize: 9, fontWeight: 700, color: 'var(--text-3)', letterSpacing: '0.09em', textTransform: 'uppercase', marginBottom: 8 },
+  prefItem: { display: 'flex', alignItems: 'center', gap: 7 },
+  prefRank: { width: 16, height: 16, borderRadius: '50%', background: 'var(--wine-dim)', color: '#F9A8B8', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(110,30,42,0.3)' },
+  assignBlock: { flex: '0 0 210px' },
+  assignedBox: { display: 'flex', flexDirection: 'column', gap: 5, background: 'rgba(45,106,79,0.1)', borderRadius: 'var(--radius-sm)', padding: '10px 12px', border: '1px solid rgba(74,222,128,0.15)' },
+  assignedCountry: { fontWeight: 700, fontSize: 13, color: '#4ADE80' },
+  reassignBtn: { background: 'none', border: 'none', color: 'var(--text-3)', fontSize: 11, cursor: 'pointer', textDecoration: 'underline', padding: 0, textAlign: 'left', fontFamily: 'inherit' },
+  select: { width: '100%', padding: '8px 10px', background: 'var(--surface-el)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: 12, color: 'var(--text)', fontFamily: 'inherit', outline: 'none' },
 }

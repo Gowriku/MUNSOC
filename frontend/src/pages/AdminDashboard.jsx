@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react'
+import { 
+  Users, CreditCard, MessageSquare, Shield, Clock, Key, AlertTriangle,
+  LayoutDashboard, Download, RefreshCw, Plus, Save, Phone, Mail, CheckCircle, 
+  XCircle, Clock3, AlertCircle, FileText, Check, ChevronRight, Activity,
+  Search // <-- Added this to fix the 'Search not defined' crash
+} from 'lucide-react'
 import PageLayout from '../components/PageLayout'
 import Card, { CardTitle, Button, StatusBadge } from '../components/Card'
 import { useToast, ToastContainer } from '../components/Toast'
@@ -175,87 +181,103 @@ export default function AdminDashboard() {
     return matchSearch && matchPay
   })
 
-  const TabBtn = ({ tab, label }) => (
-    <button onClick={() => setActiveTab(tab)}
-      style={{ ...s.tab, ...(activeTab === tab ? s.activeTab : {}) }}>
-      {label}
+  const TabBtn = ({ tab, label, icon: Icon, badge }) => (
+    <button onClick={() => setActiveTab(tab)} style={{ ...s.tab, ...(activeTab === tab ? s.activeTab : {}) }}>
+      <Icon size={14} />
+      <span>{label}</span>
+      {badge > 0 && <span style={s.tabBadge}>{badge}</span>}
     </button>
   )
 
   return (
-    <PageLayout title="⚙️ Admin Portal" subtitle="Full control — delegates, payments, team, and event settings." maxWidth={1100}>
+    <PageLayout title="Secretariat Portal" subtitle="Full control — delegates, payments, team, and event settings." maxWidth={1150}>
       <ToastContainer toasts={toasts} />
 
       <div style={s.tabs}>
-        <TabBtn tab="overview"   label="📊 Overview" />
-        <TabBtn tab="delegates"  label={`👥 Delegates (${delegates.length})`} />
-        <TabBtn tab="payments"   label="💳 Payments" />
-        <TabBtn tab="messages"   label={`🆘 Emergency${unreadMsgs > 0 ? ` (${unreadMsgs})` : ''}`} />
-        <TabBtn tab="feedback"   label={`💬 Feedback (${feedback.length})`} />
-        <TabBtn tab="team"       label={`🧑‍💼 Team (${team.length})`} />
-        <TabBtn tab="fee-tiers"  label="⏰ Fee Tiers" />
-        <TabBtn tab="roles"      label="🛡️ Roles" />
+        <TabBtn tab="overview"   icon={LayoutDashboard} label="Overview" />
+        <TabBtn tab="delegates"  icon={Users}           label="Delegates" badge={delegates.length} />
+        <TabBtn tab="payments"   icon={CreditCard}      label="Payments" />
+        <TabBtn tab="messages"   icon={AlertTriangle}   label="Emergency" badge={unreadMsgs} />
+        <TabBtn tab="feedback"   icon={MessageSquare}   label="Feedback" badge={feedback.length} />
+        <TabBtn tab="team"       icon={Shield}          label="Team" badge={team.length} />
+        <TabBtn tab="fee-tiers"  icon={Clock}           label="Fee Tiers" />
+        <TabBtn tab="roles"      icon={Key}             label="Roles" />
       </div>
 
-      {loading && <Card style={{ textAlign: 'center', padding: 48 }}><p style={{ color: '#888' }}>Loading...</p></Card>}
+      {loading && (
+        <Card style={{ display: 'flex', justifyContent: 'center', padding: 60 }}>
+          <RefreshCw size={24} className="spin" color="var(--text-3)" />
+        </Card>
+      )}
 
       {/* ── OVERVIEW ────────────────────────────────────────────── */}
       {!loading && activeTab === 'overview' && summary && (
-        <div>
+        <div style={s.fadeEnter}>
           <div style={s.statGrid}>
             {[
-              { label: 'Total Delegates',  value: summary.delegates.total,              icon: '👥', color: '#1a1a2e' },
-              { label: 'Paid',             value: summary.delegates.paid,               icon: '✅', color: '#2e7d32' },
-              { label: 'Awaiting Confirm', value: summary.delegates.payment_submitted,  icon: '⏳', color: '#e65100' },
-              { label: 'Unpaid',           value: summary.delegates.unpaid,             icon: '❌', color: '#c62828' },
-              { label: 'Assigned',         value: summary.assignments.assigned,         icon: '📋', color: '#6a1b9a' },
-              { label: 'Unassigned',       value: summary.assignments.unassigned,       icon: '⚠️', color: '#f57f17' },
-              { label: 'Checked In',       value: summary.attendance.checked_in,        icon: '🎫', color: '#0277bd' },
-              { label: 'Not Checked In',   value: summary.attendance.not_checked_in,    icon: '🚫', color: '#888' },
-            ].map(({ label, value, icon, color }) => (
+              { label: 'Total Delegates',  value: summary.delegates.total,              icon: Users,        color: 'var(--text)' },
+              { label: 'Paid',             value: summary.delegates.paid,               icon: CheckCircle,  color: '#4caf50' },
+              { label: 'Awaiting Confirm', value: summary.delegates.payment_submitted,  icon: Clock3,       color: '#f59e0b' },
+              { label: 'Unpaid',           value: summary.delegates.unpaid,             icon: XCircle,      color: '#ef4444' },
+              { label: 'Assigned',         value: summary.assignments.assigned,         icon: FileText,     color: 'var(--gold)' },
+              { label: 'Unassigned',       value: summary.assignments.unassigned,       icon: AlertCircle,  color: '#8b5cf6' },
+              { label: 'Checked In',       value: summary.attendance.checked_in,        icon: Activity,     color: '#06b6d4' },
+              { label: 'Not Checked In',   value: summary.attendance.not_checked_in,    icon: Users,        color: 'var(--text-3)' },
+            ].map(({ label, value, icon: Icon, color }) => (
               <div key={label} style={s.statCard}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>{icon}</div>
-                <div style={{ ...s.statVal, color }}>{value}</div>
-                <div style={s.statLabel}>{label}</div>
+                <div style={{ ...s.statIconWrap, color }}>
+                  <Icon size={20} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={s.statVal}>{value}</span>
+                  <span style={s.statLabel}>{label}</span>
+                </div>
               </div>
             ))}
           </div>
 
           <div style={s.actionGrid}>
-            <Card>
-              <CardTitle>Pending Actions</CardTitle>
+            <Card gold>
+              <CardTitle icon={<AlertTriangle size={14} />}>Pending Actions</CardTitle>
               {summary.delegates.payment_submitted > 0 && (
                 <div style={s.actionItem}>
-                  <span style={s.actionDot} />
-                  <span><strong>{summary.delegates.payment_submitted}</strong> payment{summary.delegates.payment_submitted !== 1 ? 's' : ''} awaiting confirmation</span>
-                  <Button onClick={() => { setActiveTab('payments'); setPayFilter('submitted') }} variant="ghost" style={{ fontSize: 12, padding: '4px 10px', marginLeft: 'auto' }}>Review →</Button>
+                  <div style={s.actionDot} />
+                  <div style={{ flex: 1, fontSize: 13 }}>
+                    <strong style={{ color: 'var(--text)' }}>{summary.delegates.payment_submitted}</strong> payment{summary.delegates.payment_submitted !== 1 ? 's' : ''} awaiting confirmation
+                  </div>
+                  <Button onClick={() => { setActiveTab('payments'); setPayFilter('submitted') }} variant="secondary" style={s.actionBtn}>Review <ChevronRight size={12} /></Button>
                 </div>
               )}
               {summary.messages.unread > 0 && (
                 <div style={s.actionItem}>
-                  <span style={{ ...s.actionDot, background: '#f44336' }} />
-                  <span><strong>{summary.messages.unread}</strong> unread emergency message{summary.messages.unread !== 1 ? 's' : ''}</span>
-                  <Button onClick={() => setActiveTab('messages')} variant="ghost" style={{ fontSize: 12, padding: '4px 10px', marginLeft: 'auto' }}>View →</Button>
+                  <div style={{ ...s.actionDot, background: '#ef4444' }} />
+                  <div style={{ flex: 1, fontSize: 13 }}>
+                    <strong style={{ color: 'var(--text)' }}>{summary.messages.unread}</strong> unread emergency message{summary.messages.unread !== 1 ? 's' : ''}
+                  </div>
+                  <Button onClick={() => setActiveTab('messages')} variant="secondary" style={s.actionBtn}>View <ChevronRight size={12} /></Button>
                 </div>
               )}
               {summary.delegates.payment_submitted === 0 && summary.messages.unread === 0 && (
-                <p style={{ color: '#aaa', fontSize: 14, textAlign: 'center', padding: '12px 0' }}>✅ No pending actions</p>
+                <div style={s.emptyState}>
+                  <CheckCircle size={20} color="var(--gold)" style={{ opacity: 0.5, marginBottom: 8 }} />
+                  <p style={s.mutedText}>All clear. No pending actions.</p>
+                </div>
               )}
             </Card>
 
             <Card>
-              <CardTitle>Registration Progress</CardTitle>
+              <CardTitle icon={<Activity size={14} />}>Registration Progress</CardTitle>
               {[
-                { label: 'Paid',        value: summary.delegates.paid,               total: summary.delegates.total, color: '#4caf50' },
-                { label: 'Assigned',    value: summary.assignments.assigned,          total: summary.delegates.total, color: '#2196f3' },
-                { label: 'Checked In',  value: summary.attendance.checked_in,         total: summary.delegates.total, color: '#9c27b0' },
+                { label: 'Payments Completed', value: summary.delegates.paid,         total: summary.delegates.total, color: 'var(--gold)' },
+                { label: 'Portfolios Assigned',value: summary.assignments.assigned,   total: summary.delegates.total, color: 'var(--wine)' },
+                { label: 'Event Check-ins',    value: summary.attendance.checked_in,  total: summary.delegates.total, color: '#06b6d4' },
               ].map(({ label, value, total, color }) => {
                 const pct = total > 0 ? Math.round((value / total) * 100) : 0
                 return (
-                  <div key={label} style={{ marginBottom: 14 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>
-                      <span style={{ fontWeight: 600 }}>{label}</span>
-                      <span style={{ color: '#888' }}>{value} / {total} ({pct}%)</span>
+                  <div key={label} style={{ marginBottom: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 12 }}>
+                      <span style={{ fontWeight: 600, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+                      <span style={{ color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>{value} / {total} ({pct}%)</span>
                     </div>
                     <div style={s.progressTrack}>
                       <div style={{ ...s.progressFill, width: `${pct}%`, background: color }} />
@@ -266,18 +288,20 @@ export default function AdminDashboard() {
             </Card>
 
             <Card>
-              <CardTitle>Quick Actions</CardTitle>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <Button onClick={() => window.open('/api/v1/admin/delegates/export', '_blank')} variant="secondary" style={{ width: '100%' }}>
-                  ⬇ Export Delegates CSV
+              <CardTitle icon={<Shield size={14} />}>Quick Actions</CardTitle>
+              <div style={s.quickLinks}>
+                <Button onClick={() => window.open('/api/v1/admin/delegates/export', '_blank')} variant="secondary" icon={<Download size={13} />} style={{ width: '100%', justifyContent: 'flex-start' }}>
+                  Export Delegates CSV
                 </Button>
-                <Button onClick={() => setActiveTab('fee-tiers')} variant="ghost" style={{ width: '100%' }}>
-                  ⏰ Manage Fee Tier Timers
+                <Button onClick={() => setActiveTab('fee-tiers')} variant="ghost" icon={<Clock size={13} />} style={{ width: '100%', justifyContent: 'flex-start' }}>
+                  Manage Fee Tier Timers
                 </Button>
-                <Button onClick={() => setActiveTab('team')} variant="ghost" style={{ width: '100%' }}>
-                  ➕ Add Team Member
+                <Button onClick={() => setActiveTab('team')} variant="ghost" icon={<Plus size={13} />} style={{ width: '100%', justifyContent: 'flex-start' }}>
+                  Add Team Member
                 </Button>
-                <Button onClick={fetchAll} variant="ghost" style={{ width: '100%' }}>↻ Refresh</Button>
+                <Button onClick={fetchAll} variant="ghost" icon={<RefreshCw size={13} />} style={{ width: '100%', justifyContent: 'flex-start' }}>
+                  Refresh Dashboard
+                </Button>
               </div>
             </Card>
           </div>
@@ -286,137 +310,143 @@ export default function AdminDashboard() {
 
       {/* ── DELEGATES TAB ───────────────────────────────────────── */}
       {!loading && activeTab === 'delegates' && (
-        <Card>
+        <Card style={s.fadeEnter}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
-            <CardTitle>All Delegates</CardTitle>
-            <Button onClick={() => window.open('/api/v1/admin/delegates/export', '_blank')} variant="secondary" style={{ fontSize: 13, padding: '7px 14px' }}>⬇ Export CSV</Button>
+            <CardTitle icon={<Users size={14} />}>Master Delegate Database</CardTitle>
+            <Button onClick={() => window.open('/api/v1/admin/delegates/export', '_blank')} variant="secondary" icon={<Download size={13} />}>Export CSV</Button>
           </div>
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="🔍 Search by name, email, college..."
-            style={{ ...s.searchInput, marginBottom: 14 }} />
+          <div style={s.searchWrap}>
+            <Search size={16} color="var(--text-3)" style={s.searchIcon} />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name, email, college..."
+              style={s.searchInput} />
+          </div>
           <div style={s.tableWrap}>
             <table style={s.table}>
               <thead>
                 <tr style={s.thead}>
-                  {['Name', 'Email', 'College', 'Tier', 'Amount', 'Payment', 'Transport'].map(h => (
+                  {['Name', 'Email', 'Institution', 'Tier', 'Amount', 'Payment', 'Transport'].map(h => (
                     <th key={h} style={s.th}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {filteredDelegates.map(d => (
-                  <tr key={d.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
-                    <td style={s.td}><strong>{d.name}</strong></td>
-                    <td style={{ ...s.td, fontSize: 12, color: '#888' }}>{d.email}</td>
-                    <td style={{ ...s.td, fontSize: 12, color: '#888' }}>{d.college || '—'}</td>
-                    <td style={s.td}><span style={s.tierChip}>{d.reg_tier?.replace(/_/g, ' ') || '—'}</span></td>
-                    <td style={{ ...s.td, fontWeight: 600 }}>₹{d.amount_due}</td>
+                  <tr key={d.id} style={s.tr}>
+                    <td style={s.td}><strong style={{ color: 'var(--text)' }}>{d.name}</strong></td>
+                    <td style={{ ...s.td, color: 'var(--text-3)' }}>{d.email}</td>
+                    <td style={{ ...s.td, color: 'var(--text-3)' }}>{d.college || '—'}</td>
+                    <td style={s.td}><span style={s.tierPill}>{d.reg_tier?.replace(/_/g, ' ') || '—'}</span></td>
+                    <td style={{ ...s.td, fontWeight: 700, color: 'var(--text)' }}>₹{d.amount_due}</td>
                     <td style={s.td}><StatusBadge status={d.payment_status} /></td>
-                    <td style={s.td}>{d.transportation_opted ? '✅' : '❌'}</td>
+                    <td style={s.td}>{d.transportation_opted ? <Check size={16} color="#4caf50" /> : <XCircle size={16} color="var(--text-3)" opacity={0.3} />}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {filteredDelegates.length === 0 && <p style={{ textAlign: 'center', color: '#aaa', padding: 32 }}>No delegates found</p>}
+            {filteredDelegates.length === 0 && <div style={s.emptyState}><p style={s.mutedText}>No delegates match your criteria.</p></div>}
           </div>
         </Card>
       )}
 
       {/* ── PAYMENTS TAB ────────────────────────────────────────── */}
       {!loading && activeTab === 'payments' && (
-        <div>
+        <div style={s.fadeEnter}>
           <div style={s.payFilterRow}>
             {['all', 'pending', 'submitted', 'confirmed', 'rejected'].map(f => (
-              <button key={f} onClick={() => setPayFilter(f)}
-                style={{ ...s.filterBtn, ...(payFilter === f ? s.filterBtnActive : {}) }}>
+              <button key={f} onClick={() => setPayFilter(f)} style={{ ...s.filterBtn, ...(payFilter === f ? s.filterBtnActive : {}) }}>
                 {f.charAt(0).toUpperCase() + f.slice(1)}
                 {f !== 'all' && <span style={s.filterCount}>{delegates.filter(d => d.payment_status === f).length}</span>}
               </button>
             ))}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {delegates
               .filter(d => payFilter === 'all' || d.payment_status === payFilter)
               .map(d => (
                 <Card key={d.id} style={{
-                  border: d.payment_status === 'submitted' ? '2px solid #ff9800' : d.payment_status === 'confirmed' ? '1px solid #c8e6c9' : '1px solid #e8e8e8',
-                  background: d.payment_status === 'submitted' ? '#fff8e1' : 'white',
+                  ...(d.payment_status === 'submitted' ? { border: '1px solid var(--gold)', background: 'rgba(201,162,39,0.03)' } : {}),
                 }}>
                   <div style={s.payRow}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15 }}>{d.name}</div>
-                      <div style={{ fontSize: 13, color: '#888' }}>{d.email}</div>
-                      {d.college && <div style={{ fontSize: 12, color: '#aaa' }}>{d.college}</div>}
+                      <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', marginBottom: 2 }}>{d.name}</div>
+                      <div style={{ fontSize: 13, color: 'var(--text-3)' }}>{d.email} {d.college && `• ${d.college}`}</div>
                     </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: '#1a1a2e' }}>₹{d.amount_due}</div>
-                      <div style={{ fontSize: 12, color: '#aaa' }}>{d.reg_tier?.replace(/_/g, ' ')}</div>
+                    
+                    <div style={{ textAlign: 'right', paddingRight: 20 }}>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px' }}>₹{d.amount_due}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{d.reg_tier?.replace(/_/g, ' ')}</div>
                     </div>
-                    <div style={{ textAlign: 'center' }}>
+
+                    <div style={{ textAlign: 'right', minWidth: 140 }}>
                       <StatusBadge status={d.payment_status} />
-                      {d.payment_utr && <div style={s.utrBox}>UTR: <strong style={{ fontFamily: 'monospace' }}>{d.payment_utr}</strong></div>}
+                      {d.payment_utr && <div style={s.utrBox}>UTR: <span>{d.payment_utr}</span></div>}
                     </div>
+
                     <div style={s.payActions}>
                       {d.payment_status === 'submitted' && (
                         <>
-                          <Button onClick={() => handlePaymentAction(d.id, 'confirmed')} disabled={confirmingId === d.id} variant="success" style={{ fontSize: 13, padding: '7px 14px' }}>
-                            {confirmingId === d.id ? '...' : '✅ Confirm'}
+                          <Button onClick={() => handlePaymentAction(d.id, 'confirmed')} disabled={confirmingId === d.id} style={{ background: '#4caf50', color: 'white', border: 'none' }}>
+                            {confirmingId === d.id ? '...' : 'Verify'}
                           </Button>
-                          <Button onClick={() => handlePaymentAction(d.id, 'rejected')} disabled={confirmingId === d.id} variant="danger" style={{ fontSize: 13, padding: '7px 14px' }}>
-                            ❌ Reject
+                          <Button onClick={() => handlePaymentAction(d.id, 'rejected')} disabled={confirmingId === d.id} style={{ background: '#ef4444', color: 'white', border: 'none' }}>
+                            Reject
                           </Button>
                         </>
                       )}
-                      {d.payment_status === 'confirmed' && <span style={{ fontSize: 13, color: '#4caf50', fontWeight: 600 }}>✓ Confirmed</span>}
-                      {(d.payment_status === 'pending' || d.payment_status === 'rejected') && <span style={{ fontSize: 13, color: '#aaa' }}>Awaiting payment</span>}
+                      {d.payment_status === 'confirmed' && <span style={{ fontSize: 13, color: '#4caf50', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}><CheckCircle size={14} /> Confirmed</span>}
+                      {(d.payment_status === 'pending' || d.payment_status === 'rejected') && <span style={{ fontSize: 13, color: 'var(--text-3)' }}>Awaiting Action</span>}
                     </div>
                   </div>
                 </Card>
               ))}
+              {delegates.filter(d => payFilter === 'all' || d.payment_status === payFilter).length === 0 && (
+                <div style={s.emptyState}><p style={s.mutedText}>No payments found for this status.</p></div>
+              )}
           </div>
         </div>
       )}
 
       {/* ── EMERGENCY MESSAGES TAB ──────────────────────────────── */}
       {!loading && activeTab === 'messages' && (
-        <div>
+        <div style={s.fadeEnter}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 style={{ margin: 0 }}>🆘 Emergency Messages from Delegates</h3>
-            <Button onClick={fetchAll} variant="ghost" style={{ fontSize: 13 }}>↻ Refresh</Button>
+            <h3 style={{ margin: 0, fontSize: 18, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}><AlertTriangle size={18} color="#ef4444" /> Live Emergency Broadcasts</h3>
+            <Button onClick={fetchAll} variant="ghost" icon={<RefreshCw size={13} />}>Refresh</Button>
           </div>
           {messages.length === 0 ? (
-            <Card style={{ textAlign: 'center', padding: 48 }}><p style={{ color: '#aaa' }}>No emergency messages</p></Card>
+            <Card style={s.emptyState}><CheckCircle size={24} color="var(--gold)" style={{ opacity: 0.5, marginBottom: 8 }} /><p style={s.mutedText}>Inbox zero. No active emergencies.</p></Card>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {messages.map(msg => (
-                <Card key={msg.id} style={{ border: msg.is_read ? '1px solid #e0e0e0' : '2px solid #ef5350', background: msg.is_read ? 'white' : '#fff5f5' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+                <Card key={msg.id} style={{ border: msg.is_read ? '1px solid var(--border)' : '1px solid #ef4444', background: msg.is_read ? 'var(--surface)' : 'rgba(239,68,68,0.03)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
                     <div>
-                      <strong>{msg.sender_name}</strong>
-                      <span style={{ fontSize: 13, color: '#888', marginLeft: 8 }}>{msg.sender_email}</span>
-                      {msg.sender_phone && <span style={{ fontSize: 13, color: '#1565c0', marginLeft: 8, fontWeight: 600 }}>📞 {msg.sender_phone}</span>}
+                      <strong style={{ color: 'var(--text)', fontSize: 15 }}>{msg.sender_name}</strong>
+                      <span style={{ fontSize: 13, color: 'var(--text-3)', marginLeft: 8 }}>{msg.sender_email}</span>
+                      {msg.sender_phone && <span style={{ fontSize: 13, color: 'var(--gold)', marginLeft: 8, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}><Phone size={12} /> {msg.sender_phone}</span>}
                     </div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <span style={{ fontSize: 12, color: '#aaa' }}>{new Date(msg.created_at).toLocaleString()}</span>
-                      {!msg.is_read && <span style={s.urgentBadge}>UNREAD</span>}
-                      {msg.is_read && <span style={s.resolvedBadge}>Resolved</span>}
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>{new Date(msg.created_at).toLocaleString()}</span>
+                      {!msg.is_read && <span style={s.urgentBadge}>ACTION REQUIRED</span>}
+                      {msg.is_read && <span style={s.resolvedBadge}>RESOLVED</span>}
                     </div>
                   </div>
                   <div style={s.msgBody}>{msg.message}</div>
                   {msg.reply_text && (
-                    <div style={{ background: '#e8f0fe', borderRadius: 8, padding: '8px 12px', fontSize: 13, marginBottom: 10 }}>
-                      <strong>Admin Reply:</strong> {msg.reply_text}
+                    <div style={s.replyBox}>
+                      <strong style={{ color: 'var(--wine)' }}>Secretariat Reply:</strong> {msg.reply_text}
                     </div>
                   )}
                   {!msg.is_read && (
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                       <input
                         value={replyText[msg.id] || ''}
                         onChange={e => setReplyText(prev => ({ ...prev, [msg.id]: e.target.value }))}
-                        placeholder="Type reply (optional)..."
-                        style={{ flex: 1, padding: '8px 12px', border: '1.5px solid #ddd', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none' }}
+                        placeholder="Type official response (optional)..."
+                        style={s.replyInput}
                       />
-                      <Button onClick={() => handleReply(msg.id)} variant="success" style={{ fontSize: 13 }}>✓ Resolve</Button>
+                      <Button onClick={() => handleReply(msg.id)} style={{ background: '#4caf50', color: 'white', border: 'none' }} icon={<Check size={14} />}>Mark Resolved</Button>
                     </div>
                   )}
                 </Card>
@@ -428,98 +458,96 @@ export default function AdminDashboard() {
 
       {/* ── FEEDBACK TAB ────────────────────────────────────────── */}
       {!loading && activeTab === 'feedback' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, ...s.fadeEnter }}>
           {feedback.map(fb => (
-            <Card key={fb.id} style={{ border: fb.type === 'complaint' ? '1px solid #ffcdd2' : '1px solid #e8e8e8' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+            <Card key={fb.id} style={{ border: fb.type === 'complaint' ? '1px solid rgba(239,68,68,0.3)' : '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-                    background: fb.type === 'review' ? '#fff8e1' : fb.type === 'query' ? '#e3f2fd' : '#ffebee',
-                    color: fb.type === 'review' ? '#f57f17' : fb.type === 'query' ? '#0d47a1' : '#b71c1c' }}>
-                    {fb.type?.toUpperCase()}
+                  <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
+                    background: fb.type === 'review' ? 'rgba(201,162,39,0.1)' : fb.type === 'query' ? 'rgba(6,182,212,0.1)' : 'rgba(239,68,68,0.1)',
+                    color: fb.type === 'review' ? 'var(--gold)' : fb.type === 'query' ? '#06b6d4' : '#ef4444',
+                    border: `1px solid ${fb.type === 'review' ? 'rgba(201,162,39,0.2)' : fb.type === 'query' ? 'rgba(6,182,212,0.2)' : 'rgba(239,68,68,0.2)'}`
+                  }}>
+                    {fb.type}
                   </span>
-                  {fb.is_anonymous && <span style={s.anonBadge}>Anonymous</span>}
+                  {fb.is_anonymous && <span style={s.anonBadge}>ANONYMOUS</span>}
                 </div>
-                <span style={{ fontSize: 12, color: '#aaa' }}>{new Date(fb.created_at).toLocaleString()}</span>
+                <span style={{ fontSize: 12, color: 'var(--text-3)', fontVariantNumeric: 'tabular-nums' }}>{new Date(fb.created_at).toLocaleString()}</span>
               </div>
               <p style={s.fbContent}>{fb.content}</p>
-              <div style={{ fontSize: 13, color: '#888' }}>
-                — {fb.is_anonymous ? 'Anonymous' : fb.user_name || 'Unknown'}
-                {fb.user_email && !fb.is_anonymous && <span style={{ marginLeft: 6 }}>({fb.user_email})</span>}
+              <div style={{ fontSize: 12, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 12, height: 1, background: 'var(--border)' }} />
+                {fb.is_anonymous ? 'Anonymous Delegate' : fb.user_name || 'Unknown'}
+                {fb.user_email && !fb.is_anonymous && <span style={{ opacity: 0.7 }}>({fb.user_email})</span>}
               </div>
             </Card>
           ))}
-          {feedback.length === 0 && <Card style={{ textAlign: 'center', padding: 48 }}><p style={{ color: '#aaa' }}>No feedback yet</p></Card>}
+          {feedback.length === 0 && <Card style={s.emptyState}><p style={s.mutedText}>No feedback submitted yet.</p></Card>}
         </div>
       )}
 
       {/* ── TEAM TAB ────────────────────────────────────────────── */}
       {!loading && activeTab === 'team' && (
-        <div>
-          {/* Add Staff Form */}
-          <Card style={{ marginBottom: 20, border: '2px solid #e8f0fe' }}>
-            <CardTitle>➕ Add New Team Member</CardTitle>
-            <p style={{ color: '#666', fontSize: 14, marginBottom: 16 }}>
-              Create a volunteer or DA team account. They'll log in with their email via Google.
+        <div style={s.fadeEnter}>
+          <Card gold style={{ marginBottom: 20 }}>
+            <CardTitle icon={<Plus size={14} />}>Provision Secretariat Account</CardTitle>
+            <p style={{ ...s.mutedText, marginBottom: 16 }}>
+              Create an elevated account. The user must log in with this exact email via Google OAuth.
             </p>
             <div style={s.staffFormGrid}>
               <div style={s.formGroup}>
-                <label style={s.label}>Full Name *</label>
-                <input value={staffForm.name} onChange={e => setStaffForm(p => ({ ...p, name: e.target.value }))}
-                  placeholder="Full name" style={s.input} />
+                <label style={s.label}>Full Name</label>
+                <input value={staffForm.name} onChange={e => setStaffForm(p => ({ ...p, name: e.target.value }))} placeholder="Official Name" style={s.input} />
               </div>
               <div style={s.formGroup}>
-                <label style={s.label}>Email *</label>
-                <input value={staffForm.email} onChange={e => setStaffForm(p => ({ ...p, email: e.target.value }))}
-                  placeholder="email@example.com" type="email" style={s.input} />
+                <label style={s.label}>Email Address</label>
+                <input value={staffForm.email} onChange={e => setStaffForm(p => ({ ...p, email: e.target.value }))} placeholder="email@domain.com" type="email" style={s.input} />
               </div>
               <div style={s.formGroup}>
                 <label style={s.label}>Phone</label>
-                <input value={staffForm.phone} onChange={e => setStaffForm(p => ({ ...p, phone: e.target.value }))}
-                  placeholder="+91 XXXXX XXXXX" style={s.input} />
+                <input value={staffForm.phone} onChange={e => setStaffForm(p => ({ ...p, phone: e.target.value }))} placeholder="+91" style={s.input} />
               </div>
               <div style={s.formGroup}>
-                <label style={s.label}>Role *</label>
+                <label style={s.label}>Clearance Level</label>
                 <select value={staffForm.role} onChange={e => setStaffForm(p => ({ ...p, role: e.target.value }))} style={s.select}>
                   <option value="volunteer">Volunteer</option>
                   <option value="da_team">DA Team</option>
-                  <option value="admin">Admin</option>
+                  <option value="admin">Administrator</option>
                 </select>
               </div>
             </div>
-            <Button onClick={handleAddStaff} disabled={addingStaff} style={{ marginTop: 8 }}>
-              {addingStaff ? 'Creating...' : '➕ Create Account'}
+            <Button onClick={handleAddStaff} disabled={addingStaff} style={{ marginTop: 12 }}>
+              {addingStaff ? 'Provisioning...' : 'Provision Account'}
             </Button>
           </Card>
 
-          {/* Existing team members */}
           <Card>
-            <CardTitle>Current Team ({team.length})</CardTitle>
+            <CardTitle icon={<Shield size={14} />}>Active Roster ({team.length})</CardTitle>
             <div style={s.tableWrap}>
               <table style={s.table}>
                 <thead>
                   <tr style={s.thead}>
-                    {['Name', 'Email', 'Phone', 'Role', 'Joined'].map(h => <th key={h} style={s.th}>{h}</th>)}
+                    {['Name', 'Email', 'Phone', 'Clearance', 'Date Added'].map(h => <th key={h} style={s.th}>{h}</th>)}
                   </tr>
                 </thead>
                 <tbody>
                   {team.map(u => (
-                    <tr key={u.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
-                      <td style={s.td}><strong>{u.name}</strong></td>
-                      <td style={{ ...s.td, fontSize: 12, color: '#888' }}>{u.email}</td>
-                      <td style={{ ...s.td, fontSize: 12, color: '#888' }}>{u.phone || '—'}</td>
+                    <tr key={u.id} style={s.tr}>
+                      <td style={s.td}><strong style={{ color: 'var(--text)' }}>{u.name}</strong></td>
+                      <td style={{ ...s.td, color: 'var(--text-3)' }}>{u.email}</td>
+                      <td style={{ ...s.td, color: 'var(--text-3)' }}>{u.phone || '—'}</td>
                       <td style={s.td}>
-                        <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                        <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
                           background: ROLE_COLORS[u.role] + '18', color: ROLE_COLORS[u.role], border: `1px solid ${ROLE_COLORS[u.role]}44` }}>
-                          {u.role}
+                          {u.role.replace('_', ' ')}
                         </span>
                       </td>
-                      <td style={{ ...s.td, fontSize: 12, color: '#aaa' }}>{new Date(u.created_at).toLocaleDateString()}</td>
+                      <td style={{ ...s.td, color: 'var(--text-3)' }}>{new Date(u.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              {team.length === 0 && <p style={{ textAlign: 'center', color: '#aaa', padding: 24 }}>No team members yet</p>}
+              {team.length === 0 && <div style={s.emptyState}><p style={s.mutedText}>No team members provisioned.</p></div>}
             </div>
           </Card>
         </div>
@@ -527,11 +555,12 @@ export default function AdminDashboard() {
 
       {/* ── FEE TIERS TAB ───────────────────────────────────────── */}
       {!loading && activeTab === 'fee-tiers' && (
-        <div>
-          <p style={{ color: '#666', fontSize: 14, marginBottom: 20 }}>
-            Set the start and end (deadline) times for each registration fee tier.
-            The active tier is determined automatically: when the current time falls within a tier's window, delegates are assigned that tier's fee on profile completion.
-          </p>
+        <div style={s.fadeEnter}>
+          <div style={s.adminBanner}>
+            <Clock size={14} style={{ flexShrink: 0 }} />
+            Define the active registration phases. The system automatically assigns fees based on the delegate's profile completion timestamp falling within these active windows.
+          </div>
+          
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {feeTiers.map(tier => {
               const edit = tierEdits[tier.id] || {}
@@ -545,76 +574,58 @@ export default function AdminDashboard() {
 
               return (
                 <Card key={tier.id} style={{
-                  border: isLive ? '2px solid #4caf50' : isPast ? '1px solid #ddd' : '1px solid #e3f2fd',
-                  background: isLive ? '#f1f8f1' : isPast ? '#fafafa' : 'white',
+                  ...(isLive ? { border: '1px solid var(--gold)', background: 'rgba(201,162,39,0.03)' } : isPast ? { opacity: 0.7 } : {})
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <span style={{ fontSize: 18, fontWeight: 800 }}>{tier.name}</span>
-                        <span style={{ background: '#e8f0fe', color: '#1a73e8', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700, fontFamily: 'monospace' }}>
-                          {tier.tier_key}
-                        </span>
-                        {isLive && <span style={{ background: '#e8f5e9', color: '#2e7d32', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>● ACTIVE NOW</span>}
-                        {isPast && <span style={{ background: '#f5f5f5', color: '#aaa', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>ENDED</span>}
-                        {isUpcoming && <span style={{ background: '#fff8e1', color: '#e65100', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 700 }}>UPCOMING</span>}
+                        <span style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>{tier.name}</span>
+                        <span style={s.tierPill}>{tier.tier_key}</span>
+                        {isLive && <span style={{ background: 'rgba(76,175,80,0.1)', color: '#4caf50', border: '1px solid rgba(76,175,80,0.2)', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 800, letterSpacing: '0.05em' }}>LIVE NOW</span>}
+                        {isPast && <span style={{ background: 'var(--surface-el)', color: 'var(--text-3)', border: '1px solid var(--border)', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 800, letterSpacing: '0.05em' }}>CONCLUDED</span>}
+                        {isUpcoming && <span style={{ background: 'rgba(201,162,39,0.1)', color: 'var(--gold)', border: '1px solid rgba(201,162,39,0.2)', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 800, letterSpacing: '0.05em' }}>UPCOMING</span>}
                       </div>
                     </div>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
-                      <input type="checkbox" checked={edit.is_active ?? tier.is_active}
-                        onChange={e => updateTierField(tier.id, 'is_active', e.target.checked)} />
-                      Enabled
+                    <label style={s.checkLabel}>
+                      <input type="checkbox" checked={edit.is_active ?? tier.is_active} onChange={e => updateTierField(tier.id, 'is_active', e.target.checked)} style={{ accentColor: 'var(--wine)' }} />
+                      Phase Enabled
                     </label>
                   </div>
 
                   <div style={s.tierFormGrid}>
                     <div style={s.formGroup}>
                       <label style={s.label}>Display Name</label>
-                      <input value={edit.name ?? tier.name}
-                        onChange={e => updateTierField(tier.id, 'name', e.target.value)}
-                        style={s.input} />
+                      <input value={edit.name ?? tier.name} onChange={e => updateTierField(tier.id, 'name', e.target.value)} style={s.input} />
                     </div>
                     <div style={s.formGroup}>
                       <label style={s.label}>Amount (₹)</label>
-                      <input type="number" value={edit.amount ?? tier.amount}
-                        onChange={e => updateTierField(tier.id, 'amount', e.target.value)}
-                        style={s.input} />
+                      <input type="number" value={edit.amount ?? tier.amount} onChange={e => updateTierField(tier.id, 'amount', e.target.value)} style={s.input} />
                     </div>
                     <div style={s.formGroup}>
-                      <label style={s.label}>📅 Start Date & Time</label>
-                      <input type="datetime-local" value={edit.start_date || ''}
-                        onChange={e => updateTierField(tier.id, 'start_date', e.target.value)}
-                        style={s.input} />
-                      <span style={s.fieldHint}>When this tier opens for registration</span>
+                      <label style={s.label}>Start Window</label>
+                      <input type="datetime-local" value={edit.start_date || ''} onChange={e => updateTierField(tier.id, 'start_date', e.target.value)} style={s.input} />
                     </div>
                     <div style={s.formGroup}>
-                      <label style={s.label}>📅 End Date & Time (Deadline)</label>
-                      <input type="datetime-local" value={edit.deadline || ''}
-                        onChange={e => updateTierField(tier.id, 'deadline', e.target.value)}
-                        style={s.input} />
-                      <span style={s.fieldHint}>Registration at this tier closes after this</span>
+                      <label style={s.label}>Deadline</label>
+                      <input type="datetime-local" value={edit.deadline || ''} onChange={e => updateTierField(tier.id, 'deadline', e.target.value)} style={s.input} />
                     </div>
                   </div>
 
                   {edit.start_date && edit.deadline && (
-                    <div style={{ background: '#f8f9fa', borderRadius: 8, padding: '8px 14px', fontSize: 13, marginBottom: 12, color: '#555' }}>
-                      Window: <strong>{new Date(edit.start_date).toLocaleString()}</strong> → <strong>{new Date(edit.deadline).toLocaleString()}</strong>
-                      <span style={{ marginLeft: 12, color: '#888' }}>
-                        ({Math.ceil((new Date(edit.deadline) - new Date(edit.start_date)) / (1000 * 60 * 60 * 24))} days)
-                      </span>
+                    <div style={s.timeBox}>
+                      <Clock size={13} color="var(--text-3)" />
+                      Active Period: <strong>{new Date(edit.start_date).toLocaleString()}</strong> to <strong>{new Date(edit.deadline).toLocaleString()}</strong>
                     </div>
                   )}
 
-                  <Button onClick={() => handleSaveTier(tier.id)} disabled={isSaving} style={{ fontSize: 13 }}>
-                    {isSaving ? 'Saving...' : '💾 Save Timer'}
+                  <Button onClick={() => handleSaveTier(tier.id)} disabled={isSaving} variant={isLive ? 'gold' : 'secondary'} icon={<Save size={13} />}>
+                    {isSaving ? 'Saving parameters...' : 'Update Phase Parameters'}
                   </Button>
                 </Card>
               )
             })}
             {feeTiers.length === 0 && (
-              <Card style={{ textAlign: 'center', padding: 48 }}>
-                <p style={{ color: '#aaa' }}>No fee tiers configured. Add them in the database seed or backend admin.</p>
-              </Card>
+              <Card style={s.emptyState}><p style={s.mutedText}>No fee tiers configured in the database.</p></Card>
             )}
           </div>
         </div>
@@ -622,42 +633,41 @@ export default function AdminDashboard() {
 
       {/* ── ROLES TAB ───────────────────────────────────────────── */}
       {!loading && activeTab === 'roles' && (
-        <Card>
-          <CardTitle>User Role Management</CardTitle>
-          <p style={{ color: '#666', fontSize: 14, marginBottom: 4 }}>
-            Changing a delegate to volunteer/DA will remove their registration, preferences, and QR data.
-          </p>
-          <p style={{ color: '#c62828', fontSize: 13, marginBottom: 16 }}>
-            ⚠️ This action is not easily reversible — the delegate would need to re-register.
-          </p>
+        <Card style={s.fadeEnter}>
+          <CardTitle icon={<Key size={14} />}>Global Access Control</CardTitle>
+          <div style={{ ...s.adminBanner, background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', marginBottom: 20 }}>
+            <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+            Warning: Demoting a delegate to staff will permanently wipe their portfolio assignments, payments, and QR code data. This action cannot be reversed.
+          </div>
+          
           <div style={s.tableWrap}>
             <table style={s.table}>
               <thead>
                 <tr style={s.thead}>
-                  {['Name', 'Email', 'Current Role', 'Change Role'].map(h => <th key={h} style={s.th}>{h}</th>)}
+                  {['User Identity', 'Email', 'Current Clearance', 'Modify Access'].map(h => <th key={h} style={s.th}>{h}</th>)}
                 </tr>
               </thead>
               <tbody>
                 {users.map(u => (
-                  <tr key={u.id} style={{ borderBottom: '1px solid #f5f5f5' }}>
-                    <td style={s.td}><strong>{u.name}</strong></td>
-                    <td style={{ ...s.td, fontSize: 13, color: '#888' }}>{u.email}</td>
+                  <tr key={u.id} style={s.tr}>
+                    <td style={s.td}><strong style={{ color: 'var(--text)' }}>{u.name}</strong></td>
+                    <td style={{ ...s.td, color: 'var(--text-3)' }}>{u.email}</td>
                     <td style={s.td}>
-                      <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+                      <span style={{ padding: '3px 10px', borderRadius: 20, fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
                         background: ROLE_COLORS[u.role] + '18', color: ROLE_COLORS[u.role], border: `1px solid ${ROLE_COLORS[u.role]}44` }}>
-                        {u.role}
+                        {u.role.replace('_', ' ')}
                       </span>
                     </td>
                     <td style={s.td}>
                       <select defaultValue={u.role} disabled={updatingRole === u.id}
                         onChange={e => {
                           if (u.role === 'delegate' && e.target.value !== 'delegate') {
-                            if (!window.confirm(`Change ${u.name} from delegate to ${e.target.value}? This will remove their registration data.`)) return
+                            if (!window.confirm(`CRITICAL WARNING: Demote ${u.name} from Delegate to ${e.target.value.toUpperCase()}? All registration data will be wiped.`)) return
                           }
                           handleRoleUpdate(u.id, e.target.value)
                         }}
-                        style={{ padding: '5px 8px', border: '1px solid #ddd', borderRadius: 6, fontSize: 13, fontFamily: 'inherit', background: 'white', cursor: 'pointer' }}>
-                        {['delegate', 'volunteer', 'da_team', 'admin'].map(r => <option key={r} value={r}>{r}</option>)}
+                        style={s.select}>
+                        {['delegate', 'volunteer', 'da_team', 'admin'].map(r => <option key={r} value={r}>{r.replace('_', ' ').toUpperCase()}</option>)}
                       </select>
                     </td>
                   </tr>
@@ -672,42 +682,68 @@ export default function AdminDashboard() {
 }
 
 const s = {
-  tabs: { display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' },
-  tab: { padding: '9px 14px', border: '1px solid #e0e0e0', borderRadius: 8, background: 'white', cursor: 'pointer', fontSize: 12, fontWeight: 600, fontFamily: 'inherit', color: '#555' },
-  activeTab: { background: '#1a1a2e', color: 'white', border: '1px solid #1a1a2e' },
-  statGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 20 },
-  statCard: { background: 'white', border: '1px solid #e8e8e8', borderRadius: 12, padding: '18px 14px', textAlign: 'center', boxShadow: '0 2px 6px rgba(0,0,0,0.05)' },
-  statVal: { fontSize: 34, fontWeight: 800, display: 'block' },
-  statLabel: { fontSize: 12, color: '#888', marginTop: 4 },
-  actionGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 },
-  actionItem: { display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderBottom: '1px solid #f5f5f5', fontSize: 14 },
-  actionDot: { width: 8, height: 8, borderRadius: '50%', background: '#4caf50', flexShrink: 0 },
-  progressTrack: { height: 8, background: '#f0f0f0', borderRadius: 4, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 4, transition: 'width 0.5s ease' },
-  searchInput: { width: '100%', padding: '9px 14px', border: '1.5px solid #e0e0e0', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' },
-  tableWrap: { overflowX: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: 14 },
-  thead: { background: '#f5f7fa' },
-  th: { padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: '#555', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap' },
-  td: { padding: '11px 12px', color: '#333', whiteSpace: 'nowrap' },
-  tierChip: { background: '#e8f0fe', color: '#1a73e8', padding: '2px 8px', borderRadius: 20, fontSize: 11, fontWeight: 600 },
-  payFilterRow: { display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
-  filterBtn: { padding: '8px 14px', border: '1px solid #e0e0e0', borderRadius: 20, background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', color: '#555', display: 'flex', alignItems: 'center', gap: 6 },
-  filterBtnActive: { background: '#1a1a2e', color: 'white', border: '1px solid #1a1a2e' },
-  filterCount: { background: 'rgba(0,0,0,0.1)', borderRadius: 20, padding: '0px 6px', fontSize: 11 },
-  payRow: { display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' },
-  payActions: { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' },
-  utrBox: { background: '#f5f5f5', borderRadius: 6, padding: '4px 8px', fontSize: 12, marginTop: 4 },
-  urgentBadge: { background: '#ffebee', color: '#c62828', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 700 },
-  resolvedBadge: { background: '#e8f5e9', color: '#2e7d32', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 700 },
-  msgBody: { background: '#f8f9fa', borderRadius: 8, padding: '10px 14px', fontSize: 14, marginBottom: 10 },
-  fbContent: { fontSize: 15, color: '#333', lineHeight: 1.6, margin: '0 0 8px', background: '#f8f9fa', borderRadius: 8, padding: '10px 14px' },
-  anonBadge: { background: '#f3e5f5', color: '#6a1b9a', fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 600 },
-  staffFormGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14, marginBottom: 8 },
-  tierFormGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 12 },
-  formGroup: { display: 'flex', flexDirection: 'column', gap: 4 },
-  label: { fontSize: 13, fontWeight: 600, color: '#333' },
-  input: { padding: '9px 12px', border: '1.5px solid #ddd', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', outline: 'none' },
-  select: { padding: '9px 12px', border: '1.5px solid #ddd', borderRadius: 8, fontSize: 14, fontFamily: 'inherit', background: 'white', outline: 'none' },
-  fieldHint: { fontSize: 11, color: '#aaa', marginTop: 2 },
+  fadeEnter: { animation: 'fadeIn 0.3s ease-out' },
+  tabs: { display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap', overflowX: 'auto', paddingBottom: 4 },
+  tab: { display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', borderRadius: 'var(--radius-sm)', background: 'var(--surface-el)', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--text-3)', border: '1px solid var(--border)', transition: 'all 0.15s', whiteSpace: 'nowrap' },
+  activeTab: { background: 'var(--wine)', color: 'white', border: '1px solid var(--wine)' },
+  tabBadge: { background: 'var(--gold)', color: '#000', padding: '0 6px', borderRadius: 10, fontSize: 11, fontWeight: 800 },
+  
+  statGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginBottom: 24 },
+  statCard: { background: 'var(--surface-el)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '20px', display: 'flex', alignItems: 'center', gap: 16 },
+  statIconWrap: { width: 48, height: 48, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  statVal: { fontSize: 28, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.5px', lineHeight: 1.1 },
+  statLabel: { fontSize: 12, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 4 },
+  
+  actionGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 18 },
+  actionItem: { display: 'flex', alignItems: 'center', gap: 12, padding: '12px', background: 'var(--surface)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', marginBottom: 10 },
+  actionDot: { width: 8, height: 8, borderRadius: '50%', background: 'var(--gold)', flexShrink: 0 },
+  actionBtn: { padding: '6px 12px', fontSize: 12 },
+  
+  progressTrack: { height: 6, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 3, transition: 'width 0.5s ease' },
+  
+  adminBanner: { display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(122,92,0,0.1)', border: '1px solid rgba(201,162,39,0.2)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', color: 'var(--gold)', fontSize: 13, fontWeight: 500, lineHeight: 1.5 },
+  emptyState: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '32px 0', textAlign: 'center' },
+  mutedText: { color: 'var(--text-3)', fontSize: 13, lineHeight: 1.6 },
+  
+  searchWrap: { position: 'relative', marginBottom: 16 },
+  searchIcon: { position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' },
+  searchInput: { width: '100%', padding: '10px 14px 10px 40px', background: 'var(--surface-el)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: 14, color: 'var(--text)', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s' },
+  
+  tableWrap: { overflowX: 'auto', margin: '0 -20px -20px -20px', padding: '0 20px 20px 20px' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
+  thead: { borderBottom: '2px solid var(--border)' },
+  th: { padding: '14px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-3)', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.07em', whiteSpace: 'nowrap' },
+  tr: { borderBottom: '1px solid var(--border)', transition: 'background 0.15s' },
+  td: { padding: '14px 12px', color: 'var(--text-2)', whiteSpace: 'nowrap' },
+  tierPill: { background: 'var(--wine-dim)', color: '#F9A8B8', border: '1px solid rgba(110,30,42,0.3)', padding: '2px 8px', borderRadius: 4, fontSize: 10, fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase' },
+  
+  payFilterRow: { display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' },
+  filterBtn: { padding: '8px 14px', border: '1px solid var(--border)', borderRadius: '20px', background: 'var(--surface-el)', cursor: 'pointer', fontSize: 12, fontWeight: 600, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' },
+  filterBtnActive: { background: 'var(--wine)', color: 'white', border: '1px solid var(--wine)' },
+  filterCount: { background: 'rgba(0,0,0,0.2)', borderRadius: 20, padding: '2px 6px', fontSize: 10 },
+  payRow: { display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' },
+  payActions: { display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'flex-end', minWidth: 160 },
+  utrBox: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 4, padding: '4px 8px', fontSize: 11, marginTop: 6, color: 'var(--text-3)', fontFamily: 'monospace' },
+  
+  urgentBadge: { background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#ef4444', fontSize: 10, padding: '3px 8px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' },
+  resolvedBadge: { background: 'rgba(76,175,80,0.1)', border: '1px solid rgba(76,175,80,0.2)', color: '#4caf50', fontSize: 10, padding: '3px 8px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' },
+  msgBody: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px', fontSize: 14, color: 'var(--text)', marginBottom: 12, lineHeight: 1.6 },
+  replyBox: { background: 'rgba(110,30,42,0.05)', borderLeft: '3px solid var(--wine)', borderRadius: '0 var(--radius-sm) var(--radius-sm) 0', padding: '10px 14px', fontSize: 13, marginBottom: 12, color: 'var(--text-2)' },
+  replyInput: { flex: 1, padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: 13, color: 'var(--text)', outline: 'none' },
+  
+  fbContent: { fontSize: 14, color: 'var(--text)', lineHeight: 1.6, margin: '0 0 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px' },
+  anonBadge: { background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.2)', color: '#8b5cf6', fontSize: 10, padding: '2px 8px', borderRadius: 4, fontWeight: 800, letterSpacing: '0.05em' },
+  
+  staffFormGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 16 },
+  tierFormGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 16 },
+  formGroup: { display: 'flex', flexDirection: 'column', gap: 6 },
+  label: { fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.07em' },
+  input: { width: '100%', padding: '10px 14px', background: 'var(--surface-el)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: 14, color: 'var(--text)', outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.15s' },
+  select: { width: '100%', padding: '10px 14px', background: 'var(--surface-el)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', fontSize: 13, color: 'var(--text)', outline: 'none', boxSizing: 'border-box', fontWeight: 500, cursor: 'pointer' },
+  
+  checkLabel: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-2)', cursor: 'pointer', fontWeight: 600 },
+  timeBox: { display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', fontSize: 12, marginBottom: 16, color: 'var(--text-2)' },
+  
+  quickLinks: { display: 'flex', flexDirection: 'column', gap: 8 },
 }

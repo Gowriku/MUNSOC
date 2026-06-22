@@ -381,7 +381,7 @@ export default function VolunteerPortal() {
                 ))}
               </tbody>
             </table>
-            {checkins.length === 0 && <p style={{ textAlign: 'center', color: '#aaa', padding: 32 }}>No delegates registered yet</p>}
+            {checkins.length === 0 && <p style={{ textAlign: 'center', color: '#D4AF37', padding: 32 }}>No delegates registered yet</p>}
           </div>
         </Card>
       )}
@@ -397,7 +397,7 @@ export default function VolunteerPortal() {
           {messages.length === 0 ? (
             <Card style={{ textAlign: 'center', padding: 48 }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
-              <p style={{ color: '#aaa' }}>No emergency messages yet</p>
+              <p style={{ color: '#D4AF37' }}>No emergency messages yet</p>
             </Card>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -450,17 +450,41 @@ export default function VolunteerPortal() {
 }
 
 const s = {
-  strip: { display: 'flex', gap: 0, background: 'white', border: '1px solid #e8e8e8', borderRadius: 12, marginBottom: 24, overflow: 'hidden', flexWrap: 'wrap' },
-  stripItem: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 20px', borderRight: '1px solid #f0f0f0', minWidth: 120 },
+  strip: {
+  display: 'flex',
+  gap: 0,
+  background: 'var(--surface)',
+  border: '1px solid rgba(201,162,39,0.15)',
+  borderRadius: 12,
+  boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+  marginBottom: 24,
+  overflow: 'hidden',
+  flexWrap: 'wrap',
+},
+  stripItem: { flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '16px 20px', borderRight: '1px solid rgba(201,162,39,0.12)', minWidth: 120 },
   stripVal: { fontSize: 30, fontWeight: 800 },
   stripLabel: { fontSize: 12, color: '#888', marginTop: 2, textAlign: 'center' },
   tabs: { display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' },
-  tab: { padding: '10px 18px', border: '1px solid #e0e0e0', borderRadius: 8, background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit', color: '#555' },
-  activeTab: { background: '#6a1b9a', color: 'white', border: '1px solid #6a1b9a' },
+  tab: {
+  padding: '10px 18px',
+  border: '1px solid rgba(201,162,39,0.15)',
+  borderRadius: 8,
+  background: 'var(--surface)',
+  cursor: 'pointer',
+  fontSize: 13,
+  fontWeight: 600,
+  fontFamily: 'inherit',
+  color: 'var(--text-2)',
+},
+  activeTab: {
+  background: 'linear-gradient(135deg,#B8860B,#D4AF37)',
+  color: '#111',
+  border: '1px solid #D4AF37',
+},
   grid2: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20, alignItems: 'start' },
   modeRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
   modeLabel: { fontSize: 13, fontWeight: 600, color: '#555' },
-  modeBtn: { padding: '7px 14px', border: '1.5px solid #e0e0e0', borderRadius: 20, background: 'white', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', fontWeight: 600, color: '#555' },
+  modeBtn: { padding: '7px 14px', border: '2px solid rgba(192,57,43,0.5)', borderRadius: 20, background: 'rgba(192,57,43,0.08)', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', fontWeight: 600, color: '#555' },
   modeBtnActive: { background: '#6a1b9a', color: 'white', border: '1.5px solid #6a1b9a' },
   scanPrompt: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0' },
   divider: { textAlign: 'center', color: '#bbb', fontSize: 12, margin: '20px 0', borderTop: '1px solid #f0f0f0', paddingTop: 12 },

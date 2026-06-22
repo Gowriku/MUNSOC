@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useState } from 'react'
+import { ArrowRight, MapPin, Calendar, Users, Globe, ChevronRight } from 'lucide-react'
 import api from '../api/client'
 import CountdownTimer from '../components/CountdownTimer'
+import logo1 from '../assets/logo1.png'
+import logo2 from '../assets/logo2.png'
 
 export default function Landing() {
   const [tiers, setTiers] = useState([])
@@ -13,32 +16,65 @@ export default function Landing() {
   }, [])
 
   return (
-    <div style={{ fontFamily: 'system-ui, sans-serif', color: '#1a1a2e' }}>
+    <div style={{ fontFamily: 'Inter, sans-serif', background: 'var(--bg)', color: 'var(--text)' }}>
+
+      {/* Gold top strip */}
+      <div style={{ height: 2, background: 'linear-gradient(90deg, transparent, var(--gold), transparent)' }} />
+
+      {/* Nav */}
+      <header style={s.header}>
+        <div style={s.headerInner}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 800, fontSize: 16 }}>
+            <img
+            src={logo1}
+            alt="MUN Logo"
+            style={{
+                width: 28,
+                height: 28,
+                objectFit: 'contain'
+            }}
+            />
+            MUNPortal
+          </div>
+          <a href="http://localhost:8000/api/v1/auth/login" style={s.headerCta}>
+            Register <ArrowRight size={14} />
+          </a>
+        </div>
+      </header>
 
       {/* Hero */}
-      <div style={s.hero}>
+      <section style={s.hero}>
+        <div style={s.heroGlow} />
+        <img
+        src={logo2}
+        alt=""
+        style={s.heroBackgroundLogo}
+        />
         <div style={s.heroInner}>
-          <div style={s.heroBadge}>Model United Nations 2025</div>
-          <h1 style={s.heroTitle}>Welcome to<br />MUNPortal</h1>
+          <div style={s.heroBadge}>Model United Nations 2026</div>
+          <h1 style={s.heroTitle}>Diplomacy.<br />Leadership.<br />Change.</h1>
           <p style={s.heroSub}>
-            Register, choose your committee, pay and receive your delegate pass — all in one place.
+            The premier Model UN conference experience. Register, select your committee, and receive your delegate credentials — all in one place.
           </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="http://localhost:8000/api/v1/auth/login" style={s.heroCta}>Register / Sign In →</a>
-            <a href="#committees" style={s.heroCtaGhost}>View Committees</a>
+          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a href="http://localhost:8000/api/v1/auth/login" style={s.heroCta}>
+              Register Now <ArrowRight size={16} />
+            </a>
+            <a href="#committees" style={s.heroGhost}>View Committees</a>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Stats bar */}
+      {/* Stats */}
       <div style={s.statsBar}>
         {[
-          { label: 'Committees', value: committees.length || '—' },
-          { label: 'Countries', value: committees.reduce((a, c) => a + (c.portfolios?.length || 0), 0) || '—' },
-          { label: 'Days of MUN', value: '2' },
-          { label: 'College', value: 'Your College' },
-        ].map(({ label, value }) => (
+          { label: 'Committees',   value: committees.length || '—', icon: Globe },
+          { label: 'Countries',    value: committees.reduce((a, c) => a + (c.portfolios?.length || 0), 0) || '—', icon: MapPin },
+          { label: 'Days of MUN',  value: '2', icon: Calendar },
+          { label: 'Delegates',    value: '150+', icon: Users },
+        ].map(({ label, value, icon: Icon }) => (
           <div key={label} style={s.stat}>
+            <Icon size={18} color="var(--gold)" style={{ marginBottom: 10 }} />
             <span style={s.statVal}>{value}</span>
             <span style={s.statLabel}>{label}</span>
           </div>
@@ -48,104 +84,126 @@ export default function Landing() {
       {/* Fee tiers */}
       {tiers.length > 0 && (
         <section style={s.section}>
-          <h2 style={s.sectionTitle}>Registration Fees</h2>
-          <p style={s.sectionSub}>Early registration gets you a discounted rate. Fees increase after each deadline.</p>
-          <div style={s.tiersGrid}>
-            {tiers.map((tier, i) => (
-              <div key={tier.id} style={{ ...s.tierCard, ...(i === 0 ? s.tierCardHighlight : {}) }}>
-                {i === 0 && <div style={s.bestValueBadge}>Best Value</div>}
-                <h3 style={s.tierName}>{tier.name}</h3>
-                <div style={s.tierAmount}>₹{tier.amount}</div>
-                <div style={s.tierDeadline}>
-                  Deadline: {new Date(tier.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+          <div style={s.sectionInner}>
+            <p style={s.eyebrow}>Registration</p>
+            <h2 style={s.sectionTitle}>Fee Structure</h2>
+            <p style={s.sectionSub}>Early registration is rewarded. Fees escalate after each deadline.</p>
+            <div style={s.tiersGrid}>
+              {tiers.map((tier, i) => (
+                <div key={tier.id} style={{ ...s.tierCard, ...(i === 0 ? s.tierCardFeatured : {}) }}>
+                  {i === 0 && <div style={s.featuredBadge}>Best Value</div>}
+                  <div style={s.tierLabel}>{tier.name}</div>
+                  <div style={s.tierAmount}>
+                    <span style={s.tierCurrency}>₹</span>{tier.amount}
+                  </div>
+                  <div style={s.tierDeadline}>
+                    Deadline: {new Date(tier.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                  </div>
+                  <div style={{ marginTop: 14, marginBottom: 18 }}>
+                    <CountdownTimer deadline={tier.deadline} />
+                  </div>
+                  <a href="http://localhost:8000/api/v1/auth/login" style={{ ...s.heroCta, display: 'flex', justifyContent: 'center', fontSize: 13, padding: '10px 18px' }}>
+                    Register <ArrowRight size={13} />
+                  </a>
                 </div>
-                <div style={{ marginTop: 12 }}>
-                  <CountdownTimer deadline={tier.deadline} />
-                </div>
-                <a href="http://localhost:8000/api/v1/auth/login" style={{ ...s.heroCta, display: 'block', marginTop: 16, textAlign: 'center', padding: '10px 16px', fontSize: 14 }}>
-                  Register Now
-                </a>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
       )}
 
       {/* Committees */}
       {committees.length > 0 && (
-        <section id="committees" style={{ ...s.section, background: '#f5f7fa' }}>
-          <h2 style={s.sectionTitle}>Committees</h2>
-          <p style={s.sectionSub}>Choose from our diverse range of committees. Submit up to 3 portfolio preferences after registering.</p>
-          <div style={s.committeesGrid}>
-            {committees.map(c => (
-              <div key={c.id} style={s.committeeCard}>
-                <div style={s.committeeAbbr}>{c.abbreviation}</div>
-                <h3 style={s.committeeName}>{c.name}</h3>
-                {c.topics && (
-                  <div style={s.topics}>
-                    {c.topics.split(',').map(t => (
-                      <span key={t} style={s.topicChip}>{t.trim()}</span>
-                    ))}
+        <section id="committees" style={{ ...s.section, background: 'var(--surface)' }}>
+          <div style={s.sectionInner}>
+            <p style={s.eyebrow}>Committees</p>
+            <h2 style={s.sectionTitle}>Choose Your Arena</h2>
+            <p style={s.sectionSub}>Submit up to three portfolio preferences after registering.</p>
+            <div style={s.committeesGrid}>
+              {committees.map(c => (
+                <div key={c.id} style={s.committeeCard}>
+                  <div style={s.committeeAbbr}>{c.abbreviation}</div>
+                  <h3 style={s.committeeName}>{c.name}</h3>
+                  {c.topics && (
+                    <div style={s.topics}>
+                      {c.topics.split(',').map(t => (
+                        <span key={t} style={s.topicChip}>{t.trim()}</span>
+                      ))}
+                    </div>
+                  )}
+                  <div style={s.committeeFooter}>
+                    <span style={s.portfolioCount}>{c.portfolios?.length || 0} portfolios</span>
+                    <ChevronRight size={14} color="var(--text-3)" />
                   </div>
-                )}
-                <div style={s.committeePortfolios}>
-                  {c.portfolios?.length || 0} portfolios available
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
       )}
 
-      {/* Timeline */}
+      {/* How it works */}
       <section style={s.section}>
-        <h2 style={s.sectionTitle}>How It Works</h2>
-        <div style={s.timeline}>
-          {[
-            { step: '01', title: 'Sign In', desc: 'Log in with your Google account — no password needed.' },
-            { step: '02', title: 'Complete Profile', desc: 'Add your phone, college, and opt in for transport if needed.' },
-            { step: '03', title: 'Choose Preferences', desc: 'Submit your top 3 country/committee preferences.' },
-            { step: '04', title: 'Pay Registration Fee', desc: 'Pay via UPI to our account and submit your transaction ID.' },
-            { step: '05', title: 'Get Your QR Code', desc: 'After payment is confirmed, download your delegate QR pass.' },
-            { step: '06', title: 'Attend the Event', desc: 'Show your QR at check-in. Receive live committee alerts on the portal.' },
-          ].map(({ step, title, desc }) => (
-            <div key={step} style={s.timelineItem}>
-              <div style={s.timelineStep}>{step}</div>
-              <div>
-                <h4 style={s.timelineTitle}>{title}</h4>
-                <p style={s.timelineDesc}>{desc}</p>
+        <div style={s.sectionInner}>
+          <p style={s.eyebrow}>Process</p>
+          <h2 style={s.sectionTitle}>Six Steps to the Floor</h2>
+          <div style={s.stepsGrid}>
+            {[
+              { n: '01', title: 'Sign In',          desc: 'Authenticate with your Google account. No password required.' },
+              { n: '02', title: 'Complete Profile',  desc: 'Add your contact, institution, and transport preference to lock in your fee tier.' },
+              { n: '03', title: 'Submit Preferences',desc: 'Rank up to three country portfolios across any committee.' },
+              { n: '04', title: 'Pay Registration',  desc: 'Transfer via UPI and submit your transaction ID for verification.' },
+              { n: '05', title: 'Receive Pass',      desc: 'Upon payment confirmation, your QR delegate pass is instantly generated.' },
+              { n: '06', title: 'Attend',            desc: 'Scan in at the venue. Receive live committee alerts throughout the event.' },
+            ].map(({ n, title, desc }) => (
+              <div key={n} style={s.step}>
+                <div style={s.stepNum}>{n}</div>
+                <div>
+                  <div style={s.stepTitle}>{title}</div>
+                  <div style={s.stepDesc}>{desc}</div>
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Map section */}
-      <section style={{ ...s.section, background: '#f5f7fa' }}>
-        <h2 style={s.sectionTitle}>Getting Here</h2>
-        <p style={s.sectionSub}>Find us at the venue. Click the map to open in Google Maps.</p>
-        <div style={s.mapWrap}>
-          {/* Replace the src with your college's actual coordinates */}
-          <iframe
-            title="Venue Location"
-            src="https://www.openstreetmap.org/export/embed.html?bbox=76.9,8.4,77.1,8.6&layer=mapnik&marker=8.5241,76.9366"
-            style={{ width: '100%', height: '100%', border: 'none', borderRadius: 12 }}
-            allowFullScreen
-          />
+      {/* Map */}
+      <section style={{ ...s.section, background: 'var(--surface)' }}>
+        <div style={s.sectionInner}>
+          <p style={s.eyebrow}>Venue</p>
+          <h2 style={s.sectionTitle}>Getting Here</h2>
+          <div style={s.mapWrap}>
+            <iframe
+              title="Venue Location"
+              src="https://www.openstreetmap.org/export/embed.html?bbox=76.32,9.99,76.34,10.02&layer=mapnik&marker=10.0167,76.3310"
+              style={{ width: '100%', height: '100%', border: 'none' }}
+              allowFullScreen
+            />
+          </div>
         </div>
-        <p style={{ textAlign: 'center', color: '#888', fontSize: 13, marginTop: 8 }}>
-          📍 Replace coordinates in Landing.jsx with your college location
-        </p>
       </section>
 
       {/* Footer */}
       <footer style={s.footer}>
+        <div style={s.goldAccentLine} />
         <div style={s.footerInner}>
-          <span style={{ fontWeight: 700, fontSize: 18 }}>🏛️ MUNPortal</span>
-          <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
-            Built for delegates, by the organizing team.
-          </span>
-          <a href="http://localhost:8000/api/v1/auth/login" style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>Sign In →</a>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontWeight: 800, fontSize: 15 }}>
+            <img
+            src={logo1}
+            alt="MUN Logo"
+            style={{
+                width: 28,
+                height: 28,
+                objectFit: 'contain'
+            }}
+            />
+            MUNPortal
+          </div>
+          <span style={{ color: 'var(--text-3)', fontSize: 12 }}>Built for delegates, by the organizing team.</span>
+          <a href="http://localhost:8000/api/v1/auth/login" style={{ color: 'var(--gold)', fontSize: 13, fontWeight: 600 }}>
+            Sign In
+          </a>
         </div>
       </footer>
     </div>
@@ -153,40 +211,68 @@ export default function Landing() {
 }
 
 const s = {
-  hero: { background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)', padding: '80px 16px', textAlign: 'center', color: 'white' },
-  heroInner: { maxWidth: 660, margin: '0 auto' },
-  heroBadge: { display: 'inline-block', padding: '4px 14px', background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 20, fontSize: 12, fontWeight: 600, letterSpacing: 1, marginBottom: 20, textTransform: 'uppercase' },
-  heroTitle: { fontSize: 52, fontWeight: 800, margin: '0 0 16px', lineHeight: 1.15 },
-  heroSub: { fontSize: 18, opacity: 0.75, marginBottom: 32, lineHeight: 1.6 },
-  heroCta: { display: 'inline-block', padding: '14px 28px', background: 'white', color: '#1a1a2e', borderRadius: 8, fontWeight: 700, fontSize: 15, textDecoration: 'none' },
-  heroCtaGhost: { display: 'inline-block', padding: '14px 28px', background: 'transparent', color: 'white', borderRadius: 8, fontWeight: 600, fontSize: 15, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.3)' },
-  statsBar: { display: 'flex', justifyContent: 'center', gap: 0, background: '#0f3460', color: 'white', flexWrap: 'wrap' },
-  stat: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '20px 40px', borderRight: '1px solid rgba(255,255,255,0.1)' },
-  statVal: { fontSize: 32, fontWeight: 800 },
-  statLabel: { fontSize: 12, opacity: 0.6, textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 },
-  section: { padding: '64px 16px' },
-  sectionTitle: { textAlign: 'center', fontSize: 30, fontWeight: 700, margin: '0 0 8px' },
-  sectionSub: { textAlign: 'center', color: '#666', marginBottom: 36, fontSize: 15 },
-  tiersGrid: { display: 'flex', justifyContent: 'center', gap: 20, flexWrap: 'wrap', maxWidth: 860, margin: '0 auto' },
-  tierCard: { background: 'white', border: '2px solid #e8e8e8', borderRadius: 16, padding: '28px 32px', textAlign: 'center', minWidth: 220, position: 'relative', flex: '1 1 200px', maxWidth: 260 },
-  tierCardHighlight: { border: '2px solid #1a1a2e', boxShadow: '0 8px 24px rgba(26,26,46,0.15)' },
-  bestValueBadge: { position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)', background: '#1a1a2e', color: 'white', fontSize: 11, padding: '3px 12px', borderRadius: 20, fontWeight: 700, letterSpacing: 0.5 },
-  tierName: { fontSize: 16, fontWeight: 600, margin: '0 0 8px', color: '#555' },
-  tierAmount: { fontSize: 40, fontWeight: 800, color: '#1a1a2e', margin: '8px 0' },
-  tierDeadline: { fontSize: 13, color: '#888' },
-  committeesGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, maxWidth: 1000, margin: '0 auto' },
-  committeeCard: { background: 'white', border: '1px solid #e8e8e8', borderRadius: 12, padding: 24, boxShadow: '0 2px 6px rgba(0,0,0,0.05)' },
-  committeeAbbr: { display: 'inline-block', background: '#1a1a2e', color: 'white', padding: '4px 10px', borderRadius: 6, fontSize: 12, fontWeight: 700, marginBottom: 10 },
-  committeeName: { margin: '0 0 10px', fontSize: 16, fontWeight: 600 },
-  topics: { display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
-  topicChip: { background: '#f0f4ff', color: '#3f51b5', padding: '3px 8px', borderRadius: 20, fontSize: 12 },
-  committeePortfolios: { color: '#888', fontSize: 13 },
-  timeline: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20, maxWidth: 900, margin: '0 auto' },
-  timelineItem: { display: 'flex', gap: 16, alignItems: 'flex-start' },
-  timelineStep: { width: 40, height: 40, borderRadius: '50%', background: '#1a1a2e', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 13, flexShrink: 0 },
-  timelineTitle: { margin: '6px 0 4px', fontWeight: 600 },
-  timelineDesc: { fontSize: 14, color: '#666', margin: 0 },
-  mapWrap: { height: 380, borderRadius: 12, overflow: 'hidden', border: '1px solid #e0e0e0', maxWidth: 900, margin: '0 auto', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' },
-  footer: { background: '#1a1a2e', color: 'white', padding: '24px 16px' },
-  footerInner: { maxWidth: 900, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 },
+  header: { background: '#0A0A0A', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 100 },
+  headerInner: { maxWidth: 1100, margin: '0 auto', padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+  headerCta: { display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 18px', background: 'var(--wine)', color: 'var(--text)', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none' },
+  hero: { background: 'var(--surface)', padding: '100px 24px 110px', textAlign: 'center', position: 'relative', overflow: 'hidden', borderBottom: '1px solid var(--border)' },
+  heroGlow: { position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 700, height: 400, background: 'radial-gradient(ellipse, rgba(110,30,42,0.18) 0%, transparent 70%)', pointerEvents: 'none' },
+  heroInner: {
+  maxWidth: 640,
+  margin: '0 auto',
+  position: 'relative',
+  zIndex: 2,
+    },
+  heroBadge: { display: 'inline-block', padding: '5px 16px', background: 'rgba(201,162,39,0.1)', border: '1px solid rgba(201,162,39,0.25)', borderRadius: 20, fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--gold)', textTransform: 'uppercase', marginBottom: 28 },
+  heroBackgroundLogo: {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: 500,
+  height: 500,
+  objectFit: 'contain',
+  opacity: 0.06,
+  filter: 'grayscale(100%) brightness(180%)',
+  pointerEvents: 'none',
+  userSelect: 'none',
+  zIndex: 0,
+  },
+  heroTitle: { fontSize: 58, fontWeight: 900, margin: '0 0 22px', lineHeight: 1.08, letterSpacing: '-1.5px', color: 'var(--text)' },
+  heroSub: { fontSize: 16, color: 'var(--text-2)', marginBottom: 36, lineHeight: 1.7, maxWidth: 460, margin: '0 auto 36px' },
+  heroCta: { display: 'inline-flex', alignItems: 'center', gap: 8, padding: '13px 26px', background: 'var(--wine)', color: 'var(--text)', borderRadius: 8, fontWeight: 700, fontSize: 14, textDecoration: 'none' },
+  heroGhost: { display: 'inline-flex', alignItems: 'center', padding: '13px 26px', background: 'transparent', color: 'var(--text-2)', borderRadius: 8, fontWeight: 600, fontSize: 14, textDecoration: 'none', border: '1px solid var(--border-hi)' },
+  statsBar: { display: 'flex', justifyContent: 'center', flexWrap: 'wrap', borderBottom: '1px solid var(--border)' },
+  stat: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '36px 48px', borderRight: '1px solid var(--border)', minWidth: 140 },
+  statVal: { fontSize: 34, fontWeight: 800, letterSpacing: '-1px', color: 'var(--text)' },
+  statLabel: { fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 4, fontWeight: 600 },
+  section: { padding: '80px 24px' },
+  sectionInner: { maxWidth: 1060, margin: '0 auto' },
+  eyebrow: { fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--gold)', marginBottom: 10 },
+  sectionTitle: { fontSize: 32, fontWeight: 800, margin: '0 0 10px', letterSpacing: '-0.5px', color: 'var(--text)' },
+  sectionSub: { color: 'var(--text-3)', marginBottom: 44, fontSize: 15, maxWidth: 520 },
+  tiersGrid: { display: 'flex', gap: 20, flexWrap: 'wrap' },
+  tierCard: { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '32px 28px', flex: '1 1 200px', maxWidth: 280, position: 'relative', overflow: 'hidden' },
+  tierCardFeatured: { border: '1px solid rgba(201,162,39,0.3)', borderTop: '2px solid var(--gold)', background: 'rgba(201,162,39,0.04)' },
+  featuredBadge: { position: 'absolute', top: 14, right: 14, background: 'var(--gold)', color: '#0D0D0D', fontSize: 9, fontWeight: 800, padding: '3px 8px', borderRadius: 20, letterSpacing: '0.07em', textTransform: 'uppercase' },
+  tierLabel: { fontSize: 11, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.09em', marginBottom: 10 },
+  tierAmount: { fontSize: 42, fontWeight: 900, color: 'var(--text)', letterSpacing: '-1px', lineHeight: 1 },
+  tierCurrency: { fontSize: 24, fontWeight: 700, verticalAlign: 'top', lineHeight: 1.3, color: 'var(--text-2)' },
+  tierDeadline: { fontSize: 12, color: 'var(--text-3)', marginTop: 8 },
+  committeesGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 },
+  committeeCard: { background: 'var(--surface-el)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '24px', transition: 'border-color 0.2s' },
+  committeeAbbr: { display: 'inline-flex', alignItems: 'center', padding: '4px 10px', background: 'var(--wine-dim)', border: '1px solid rgba(110,30,42,0.3)', color: 'var(--wine-hover)', borderRadius: 6, fontSize: 11, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 12 },
+  committeeName: { margin: '0 0 12px', fontSize: 15, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.1px' },
+  topics: { display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 },
+  topicChip: { background: 'rgba(201,162,39,0.08)', color: 'var(--gold)', padding: '3px 8px', borderRadius: 20, fontSize: 11, border: '1px solid rgba(201,162,39,0.15)' },
+  committeeFooter: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border)', paddingTop: 12 },
+  portfolioCount: { fontSize: 12, color: 'var(--text-3)', fontWeight: 500 },
+  stepsGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24 },
+  step: { display: 'flex', gap: 18, alignItems: 'flex-start' },
+  stepNum: { width: 42, height: 42, borderRadius: 10, background: 'var(--wine-dim)', border: '1px solid rgba(110,30,42,0.3)', color: 'var(--wine-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 12, letterSpacing: '0.05em', flexShrink: 0 },
+  stepTitle: { fontWeight: 700, fontSize: 15, marginBottom: 6, color: 'var(--text)' },
+  stepDesc: { fontSize: 13, color: 'var(--text-3)', lineHeight: 1.6 },
+  mapWrap: { height: 380, borderRadius: 'var(--radius)', overflow: 'hidden', border: '1px solid var(--border)' },
+  footer: { background: '#0A0A0A', padding: '0 24px 28px', borderTop: '1px solid var(--border)' },
+  goldAccentLine: { height: 1, background: 'linear-gradient(90deg, transparent, rgba(201,162,39,0.4), transparent)', marginBottom: 28 },
+  footerInner: { maxWidth: 1060, margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 },
 }
