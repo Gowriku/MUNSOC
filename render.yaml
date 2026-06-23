@@ -1,16 +1,16 @@
 services:
-  # ── Backend ────────────────────────────────────────────────────
+  # ── Backend ──────────────────────────────────────────────────
   - type: web
-    name: munportal-backend
+    name: munsoc                      # → deploys to munsoc.onrender.com
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
-        sync: false          # set manually in Render dashboard
+        sync: false
       - key: SECRET_KEY
-        generateValue: true  # Render auto-generates a secure random value
+        generateValue: true
       - key: ALGORITHM
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
@@ -20,24 +20,24 @@ services:
       - key: GOOGLE_CLIENT_SECRET
         sync: false
       - key: GOOGLE_REDIRECT_URI
-        sync: false
+        value: https://munsoc.onrender.com/api/v1/auth/callback
       - key: FRONTEND_URL
-        sync: false
+        value: https://munportal-frontend.onrender.com
       - key: UPI_ID
         sync: false
       - key: UPI_NAME
         sync: false
 
-  # ── Frontend ───────────────────────────────────────────────────
+  # ── Frontend ──────────────────────────────────────────────────
   - type: web
-    name: munportal-frontend
+    name: munportal-frontend           # → deploys to munportal-frontend.onrender.com
     runtime: static
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        sync: false          # set to https://munportal-backend.onrender.com
+        value: https://munsoc.onrender.com   # backend URL, no trailing slash
     routes:
       - type: rewrite
         source: /*

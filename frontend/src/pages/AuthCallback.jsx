@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import useAuthStore from '../store/authStore'
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+
 export default function AuthCallback() {
   const [params] = useSearchParams()
   const { setToken, fetchMe } = useAuthStore()
@@ -14,7 +16,7 @@ export default function AuthCallback() {
       setToken(token)
       fetchMe()
         .then(() => navigate('/dashboard'))
-        .catch(() => setError('Failed to load profile. Please try again.'))
+        .catch(() => setError('Failed to load your profile. Please try again.'))
     } else {
       setError('No token received. Google sign-in may have failed.')
     }
@@ -25,10 +27,8 @@ export default function AuthCallback() {
       <div style={s.card}>
         <div style={{ fontSize: 40, marginBottom: 12 }}>❌</div>
         <h2 style={{ margin: '0 0 8px' }}>Sign-in failed</h2>
-        <p style={{ color: '#666', marginBottom: 20 }}>{error}</p>
-        <a href={`${import.meta.env.VITE_API_URL}/...`} style={s.btn}>
-          Try Again
-        </a>
+        <p style={{ color: '#666', marginBottom: 20, fontSize: 14, lineHeight: 1.6 }}>{error}</p>
+        <a href={`${API_BASE}/api/v1/auth/login`} style={s.btn}>Try Again</a>
       </div>
     </div>
   )
@@ -37,7 +37,7 @@ export default function AuthCallback() {
     <div style={s.page}>
       <div style={s.card}>
         <div style={s.spinner} />
-        <p style={{ color: '#555', marginTop: 16 }}>Signing you in...</p>
+        <p style={{ color: '#666', marginTop: 16, fontSize: 14 }}>Signing you in...</p>
       </div>
     </div>
   )
@@ -45,8 +45,8 @@ export default function AuthCallback() {
 
 const s = {
   page: {
-    minHeight: '100vh', display: 'flex', alignItems: 'center',
-    justifyContent: 'center', background: '#f5f7fa', fontFamily: 'system-ui, sans-serif',
+    minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: '#f5f0e8', fontFamily: 'system-ui, sans-serif',
   },
   card: {
     background: 'white', borderRadius: 16, padding: '48px 40px',
@@ -54,11 +54,11 @@ const s = {
   },
   spinner: {
     width: 40, height: 40, border: '4px solid #e0e0e0',
-    borderTop: '4px solid #1a1a2e', borderRadius: '50%',
+    borderTop: '4px solid #C0392B', borderRadius: '50%',
     animation: 'spin 0.8s linear infinite', margin: '0 auto',
   },
   btn: {
-    display: 'inline-block', padding: '10px 24px', background: '#1a1a2e',
+    display: 'inline-block', padding: '10px 24px', background: '#C0392B',
     color: 'white', borderRadius: 8, textDecoration: 'none', fontWeight: 600,
   },
 }
