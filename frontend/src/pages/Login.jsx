@@ -4,7 +4,7 @@ import useAuthStore from '../store/authStore'
 
 // In production: VITE_API_URL = https://munsoc.onrender.com
 // In local dev:  VITE_API_URL is not set, so falls back to localhost:8000
-const API_BASE = import.meta.env.VITE_API_URL 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export default function Login() {
   const { token } = useAuthStore()
