@@ -51,7 +51,8 @@ function DelegateOnlyRoute({ children }) {
 
 function GoogleRedirect() {
   useEffect(() => {
-    window.location.href = 'http://localhost:8000/api/v1/auth/login'
+    window.location.href =
+  `${import.meta.env.VITE_API_URL}/api/v1/auth/login`
   }, [])
   return <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh' }}>Redirecting to Google...</div>
 }

@@ -36,7 +36,7 @@ export default function Landing() {
             />
             MUNPortal
           </div>
-          <a href="http://localhost:8000/api/v1/auth/login" style={s.headerCta}>
+          <a href={`${import.meta.env.VITE_API_URL}/...`} style={s.headerCta}>
             Register <ArrowRight size={14} />
           </a>
         </div>
@@ -57,7 +57,7 @@ export default function Landing() {
             The premier Model UN conference experience. Register, select your committee, and receive your delegate credentials — all in one place.
           </p>
           <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="http://localhost:8000/api/v1/auth/login" style={s.heroCta}>
+            <a href={`${import.meta.env.VITE_API_URL}/...`} style={s.heroCta}>
               Register Now <ArrowRight size={16} />
             </a>
             <a href="#committees" style={s.heroGhost}>View Committees</a>
@@ -102,7 +102,7 @@ export default function Landing() {
                   <div style={{ marginTop: 14, marginBottom: 18 }}>
                     <CountdownTimer deadline={tier.deadline} />
                   </div>
-                  <a href="http://localhost:8000/api/v1/auth/login" style={{ ...s.heroCta, display: 'flex', justifyContent: 'center', fontSize: 13, padding: '10px 18px' }}>
+                  <a href={`${import.meta.env.VITE_API_URL}/...`} style={{ ...s.heroCta, display: 'flex', justifyContent: 'center', fontSize: 13, padding: '10px 18px' }}>
                     Register <ArrowRight size={13} />
                   </a>
                 </div>
@@ -201,7 +201,7 @@ export default function Landing() {
             MUNPortal
           </div>
           <span style={{ color: 'var(--text-3)', fontSize: 12 }}>Built for delegates, by the organizing team.</span>
-          <a href="http://localhost:8000/api/v1/auth/login" style={{ color: 'var(--gold)', fontSize: 13, fontWeight: 600 }}>
+          <a href={`${import.meta.env.VITE_API_URL}/...`} style={{ color: 'var(--gold)', fontSize: 13, fontWeight: 600 }}>
             Sign In
           </a>
         </div>

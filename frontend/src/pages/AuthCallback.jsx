@@ -26,7 +26,7 @@ export default function AuthCallback() {
         <div style={{ fontSize: 40, marginBottom: 12 }}>❌</div>
         <h2 style={{ margin: '0 0 8px' }}>Sign-in failed</h2>
         <p style={{ color: '#666', marginBottom: 20 }}>{error}</p>
-        <a href="http://localhost:8000/api/v1/auth/login" style={s.btn}>
+        <a href={`${import.meta.env.VITE_API_URL}/...`} style={s.btn}>
           Try Again
         </a>
       </div>

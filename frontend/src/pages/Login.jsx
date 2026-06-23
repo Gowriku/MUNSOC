@@ -13,7 +13,7 @@ export default function Login() {
   // Always redirect directly to the FastAPI backend auth endpoint.
   // This works whether accessed via Vite proxy or directly.
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:8000/api/v1/auth/login'
+    window.location.href = `${import.meta.env.VITE_API_URL}/api/v1/auth/login`
   }
 
   return (
@@ -39,7 +39,7 @@ export default function Login() {
         {/* Debug link — remove before production */}
         <p style={{ marginTop: 16, fontSize: 11, color: '#ccc' }}>
           <a
-            href="http://localhost:8000/api/v1/auth/login"
+            href={`${import.meta.env.VITE_API_URL}/...`}
             style={{ color: '#aaa' }}
           >
             Direct OAuth link (use if button doesn't work)
